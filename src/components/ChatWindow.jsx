@@ -4,7 +4,7 @@ import VoiceCall from './VoiceCall';
 
 import { VERCEL_URL } from '../lib/config';
 
-function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practitionerNumber, isArchivedView, onBack, onArchived, onRead }) {
+function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practitionerNumber, isArchivedView, onArchived, onRead, onBack, refreshTrigger }) {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
@@ -74,7 +74,7 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
     return () => {
       if (channel) supabase.removeChannel(channel);
     };
-  }, [contact.phone, contact.name, contact.isArchived]);
+  }, [contact.phone, contact.name, contact.isArchived, refreshTrigger]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });

@@ -20,6 +20,7 @@ function Dashboard() {
   const [showSurvey, setShowSurvey] = useState(false);
   const [viewingArchived, setViewingArchived] = useState(false);
   const [refreshContacts, setRefreshContacts] = useState(0);
+  const [wakeRefresh, setWakeRefresh] = useState(0);
   const [feedbackDay, setFeedbackDay] = useState(null);
   const [showTour, setShowTour] = useState(false);
   const [showReportIssue, setShowReportIssue] = useState(false);
@@ -28,28 +29,33 @@ function Dashboard() {
 
   useEffect(() => {
     loadProfile();
-    const isStandalone = window.matchMedia('(display-mode: standalone)').matches
-      || window.navigator.standalone === true;
+
+    const isStandalone =
+      window.matchMedia('(display-mode: standalone)').matches ||
+      window.navigator.standalone === true;
+
     if (!isStandalone) setShowInstallBanner(true);
 
     let lastHidden = null;
 
-    const handleVisibilityChange = () => {
+    const handleVisibilityChange = async () => {
       if (document.visibilityState === 'hidden') {
         lastHidden = Date.now();
+        return;
       }
+
       if (document.visibilityState === 'visible') {
-        const timeAsleep = lastHidden ? Date.now() - lastHidden : 0;
-        if (timeAsleep > 60000) {
-          window.location.reload();
-        } else {
-          loadProfile();
-        }
+        await loadProfile();
+        setRefreshContacts(prev => prev + 1);
+        setWakeRefresh(prev => prev + 1);
       }
     };
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
 
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, []);
 
   const handleSwitchAccount = async () => {
@@ -457,6 +463,7 @@ function Dashboard() {
                 clinicName={profile?.clinic_name}
                 practitionerNumber={profile?.practitioner_phone}
                 isArchivedView={selectedContact?.isArchived}
+                refreshTrigger={wakeRefresh}
                 onArchived={() => setTimeout(() => setRefreshContacts(prev => prev + 1), 500)}
                 onRead={() => setRefreshContacts(prev => prev + 1)}
                 onBack={() => {
