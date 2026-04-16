@@ -14,9 +14,10 @@ function ContactsList({ onSelectContact, clinicNumber, onArchiveChange, viewingA
 
     const channel = supabase.channel('contacts:messages')
       .on('postgres_changes', {
-        event: 'INSERT',
+        event: '*',
         schema: 'public',
-        table: 'messages'
+        table: 'messages',
+        filter: `practitioner_id=eq.${session.user.id}`
       }, () => {
         loadContacts(viewingArchived);
       })
@@ -33,6 +34,7 @@ function ContactsList({ onSelectContact, clinicNumber, onArchiveChange, viewingA
       const { data: messages } = await supabase
         .from('messages')
         .select('from_number, to_number, direction, body, created_at, is_read, is_archived')
+        .eq('practitioner_id', session.user.id) // ✅ ADD THIS
         .eq('is_archived', archived === true)
         .neq('status', 'draft')
         .order('created_at', { ascending: false });
