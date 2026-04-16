@@ -15,6 +15,7 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
   const [archived, setArchived] = useState(false);
   const [archiveError, setArchiveError] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [currentPhone, setCurrentPhone] = useState(null);
 
   const loadMessages = async () => {
   const { data: { session } } = await supabase.auth.getSession();
@@ -36,49 +37,53 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
 };
 
   useEffect(() => {
-    let channel;
+  let channel;
 
-    const setupChat = async () => {
-      setContactName(contact.name || '');
+  const setupChat = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
 
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
+    // Only clear when switching contacts
+    if (currentPhone !== contact.phone) {
+      setMessages([]);
+      setCurrentPhone(contact.phone);
+    }
 
-      await loadMessages();
-      await markAsRead();
-      await loadMessages();
+    await loadMessages();
+    await markAsRead();
+    await loadMessages();
 
-      channel = supabase
-        .channel(`chat:${contact.phone}:${session.user.id}`)
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'messages',
-            filter: `practitioner_id=eq.${session.user.id}`
-          },
-          async (payload) => {
-            const row = payload.new || payload.old;
-            if (!row) return;
+    channel = supabase
+      .channel(`chat:${contact.phone}:${session.user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'messages',
+          filter: `practitioner_id=eq.${session.user.id}`
+        },
+        async (payload) => {
+          const row = payload.new || payload.old;
+          if (!row) return;
 
-            if (
-              row.from_number === contact.phone ||
-              row.to_number === contact.phone
-            ) {
-              await loadMessages();
-            }
+          if (
+            row.from_number === contact.phone ||
+            row.to_number === contact.phone
+          ) {
+            await loadMessages();
           }
-        )
-        .subscribe();
-    };
+        }
+      )
+      .subscribe();
+  };
 
-    setupChat();
+  setupChat();
 
-    return () => {
-      if (channel) supabase.removeChannel(channel);
-    };
-  }, [contact.phone, contact.name, contact.isArchived, refreshTrigger]);
+  return () => {
+    if (channel) supabase.removeChannel(channel);
+  };
+}, [contact.phone, contact.name, contact.isArchived, refreshTrigger]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
