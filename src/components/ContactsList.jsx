@@ -51,20 +51,32 @@ function ContactsList({ onSelectContact, clinicNumber, onArchiveChange, viewingA
       }
       setContactMap(map);
 
-      const seen = new Set();
-      const unique = [];
-      if (messages) {
-        messages.forEach(msg => {
-          const num = msg.direction === 'inbound' ? msg.from_number : msg.to_number;
-          if (num && num !== clinicNumber && !seen.has(num)) {
-            seen.add(num);
-            const patientMsgs = messages.filter(m => m.from_number === num || m.to_number === num);
-            const latest = patientMsgs[0];
-            const unreadCount = patientMsgs.filter(m => m.direction === 'inbound' && !m.is_read).length;
-            unique.push({ phone: num, latest, unreadCount });
-          }
-        });
-      }
+      const threads = {};
+
+      messages?.forEach(msg => {
+        const num = msg.direction === 'inbound' ? msg.from_number : msg.to_number;
+        if (!num || num === clinicNumber) return;
+
+        if (!threads[num]) {
+          threads[num] = {
+            phone: num,
+            latest: msg,
+            unreadCount: 0
+          };
+        }
+
+        // Count unread inbound
+        if (msg.direction === 'inbound' && !msg.is_read) {
+          threads[num].unreadCount += 1;
+        }
+
+        // Ensure latest message is correct
+        if (new Date(msg.created_at) > new Date(threads[num].latest.created_at)) {
+          threads[num].latest = msg;
+        }
+      });
+
+      const unique = Object.values(threads);
 
       // Add contacts with no messages
       if (contactsList) {
