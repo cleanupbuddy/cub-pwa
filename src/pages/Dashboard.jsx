@@ -28,35 +28,40 @@ function Dashboard() {
   const [showShareFeedback, setShowShareFeedback] = useState(false);
 
   useEffect(() => {
-    loadProfile();
+  loadProfile();
 
-    const isStandalone =
-      window.matchMedia('(display-mode: standalone)').matches ||
-      window.navigator.standalone === true;
+  const isStandalone =
+    window.matchMedia('(display-mode: standalone)').matches ||
+    window.navigator.standalone === true;
 
-    if (!isStandalone) setShowInstallBanner(true);
+  if (!isStandalone) setShowInstallBanner(true);
 
-    let lastHidden = null;
+  let lastHidden = null;
 
-    const handleVisibilityChange = async () => {
-      if (document.visibilityState === 'hidden') {
-        lastHidden = Date.now();
-        return;
-      }
+  const handleVisibilityChange = async () => {
+    if (document.visibilityState === 'hidden') {
+      lastHidden = Date.now();
+      return;
+    }
 
-      if (document.visibilityState === 'visible') {
+    if (document.visibilityState === 'visible') {
+      const timeAsleep = lastHidden ? Date.now() - lastHidden : 0;
+
+      if (timeAsleep > 60000) {
         await loadProfile();
-        setRefreshContacts(prev => prev + 1);
-        setWakeRefresh(prev => prev + 1);
       }
-    };
 
-    document.addEventListener('visibilitychange', handleVisibilityChange);
+      setRefreshContacts(prev => prev + 1);
+      setWakeRefresh(prev => prev + 1);
+    }
+  };
 
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, []);
+  document.addEventListener('visibilitychange', handleVisibilityChange);
+
+  return () => {
+    document.removeEventListener('visibilitychange', handleVisibilityChange);
+  };
+}, []);
 
   const handleSwitchAccount = async () => {
     try {
