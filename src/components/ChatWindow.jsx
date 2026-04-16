@@ -42,6 +42,7 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
 
       await loadMessages();
       await markAsRead();
+      await loadMessages();
 
       channel = supabase
         .channel(`chat:${contact.phone}:${session.user.id}`)
@@ -73,7 +74,7 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
     return () => {
       if (channel) supabase.removeChannel(channel);
     };
-  }, [contact.phone]);
+  }, [contact.phone, contact.name, contact.isArchived]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
