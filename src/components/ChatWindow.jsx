@@ -14,27 +14,31 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
   const [editingName, setEditingName] = useState(false);
   const [archived, setArchived] = useState(false);
   const [archiveError, setArchiveError] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const loadMessages = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return;
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) return;
 
-    const { data } = await supabase
-      .from('messages')
-      .select('*')
-      .eq('practitioner_id', session.user.id) // ✅ ADD THIS
-      .or(`from_number.eq.${contact.phone},to_number.eq.${contact.phone}`)
-      .neq('status', 'draft')
-      .order('created_at', { ascending: true });
+  setIsRefreshing(true);
 
-    if (data) setMessages(data);
-  };
+  const { data } = await supabase
+    .from('messages')
+    .select('*')
+    .eq('practitioner_id', session.user.id)
+    .or(`from_number.eq.${contact.phone},to_number.eq.${contact.phone}`)
+    .neq('status', 'draft')
+    .order('created_at', { ascending: true });
+
+  if (data) setMessages(data);
+
+  setIsRefreshing(false);
+};
 
   useEffect(() => {
     let channel;
 
     const setupChat = async () => {
-      setMessages([]);
       setContactName(contact.name || '');
 
       const { data: { session } } = await supabase.auth.getSession();
