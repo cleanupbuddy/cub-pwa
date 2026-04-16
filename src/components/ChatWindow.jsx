@@ -83,7 +83,39 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
   return () => {
     if (channel) supabase.removeChannel(channel);
   };
-}, [contact.phone, contact.name, contact.isArchived, refreshTrigger]);
+}, [contact.phone, contact.name, contact.isArchived]);
+
+  useEffect(() => {
+  const handleVisibilityChange = async () => {
+    if (document.visibilityState === 'visible') {
+      try {
+        await loadMessages();
+        await markAsRead();
+        await loadMessages();
+      } catch (err) {
+        console.error('Chat wake refresh error:', err);
+      }
+    }
+  };
+
+  const handlePageShow = async () => {
+    try {
+      await loadMessages();
+      await markAsRead();
+      await loadMessages();
+    } catch (err) {
+      console.error('Chat pageshow refresh error:', err);
+    }
+  };
+
+  document.addEventListener('visibilitychange', handleVisibilityChange);
+  window.addEventListener('pageshow', handlePageShow);
+
+  return () => {
+    document.removeEventListener('visibilitychange', handleVisibilityChange);
+    window.removeEventListener('pageshow', handlePageShow);
+  };
+}, [contact.phone]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
