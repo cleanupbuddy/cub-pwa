@@ -80,7 +80,44 @@ function App() {
     };
   }, []);
 
+  useEffect(() => {
+    const handleVisibilityChange = async () => {
+      if (document.visibilityState !== 'visible') return;
+
+      try {
+        const { data, error } = await supabase.auth.getSession();
+        if (error) throw error;
+
+        const currentSession = data.session;
+        setSession(currentSession);
+
+        if (!currentSession) {
+          setUserEmail('');
+          setIsSubscribed(false);
+          setNeedsOnboarding(false);
+          setLoading(false);
+          return;
+        }
+
+        const email = currentSession.user.email;
+        setUserEmail(email);
+        await checkSubscription(email);
+
+      } catch (err) {
+        console.error('Resume recovery error:', err);
+        setLoading(false);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
+
   const checkSubscription = async (email) => {
+    setLoading(true);
     try {
       setStartupError('');
 
