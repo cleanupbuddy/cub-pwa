@@ -25,7 +25,6 @@ function App() {
         if (error) throw error;
 
         const currentSession = data.session;
-
         if (!mounted) return;
 
         setSession(currentSession);
@@ -42,6 +41,10 @@ function App() {
         const email = currentSession.user.email;
         setUserEmail(email);
         await checkSubscription(email);
+
+        if (!mounted) return;
+        setLoading(false);
+        setIsBootstrapping(false);
       } catch (err) {
         console.error('Bootstrap error:', err);
         if (mounted) {
@@ -62,18 +65,21 @@ function App() {
         setIsSubscribed(false);
         setNeedsOnboarding(false);
         setLoading(false);
+        setIsBootstrapping(false);
         return;
       }
 
       try {
         const email = session.user.email;
         setUserEmail(email);
-        setLoading(true);
         await checkSubscription(email);
+        setLoading(false);
+        setIsBootstrapping(false);
       } catch (err) {
         console.error('Auth state change error:', err);
         setStartupError('There was a problem loading your account.');
         setLoading(false);
+        setIsBootstrapping(false);
       }
     });
 
@@ -81,6 +87,15 @@ function App() {
       mounted = false;
       subscription.unsubscribe();
     };
+  }, []);
+
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      console.log('⏱️ Force exiting bootstrap');
+      setIsBootstrapping(false);
+    }, 5000); // 5 seconds max
+
+    return () => clearTimeout(timeout);
   }, []);
 
   useEffect(() => {
