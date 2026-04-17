@@ -489,36 +489,6 @@ function Dashboard() {
             />
           )}
         </div>
-      ) : isMobile ? (
-        <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
-          {selectedContact ? (
-            <ChatWindow
-              contact={selectedContact}
-              clinicNumber={profile?.clinic_number}
-              therapistName={profile?.therapist_name}
-              clinicName={profile?.clinic_name}
-              practitionerNumber={profile?.practitioner_phone}
-              isArchivedView={selectedContact?.isArchived}
-              refreshTrigger={wakeRefresh}
-              onArchived={() => setTimeout(() => setRefreshContacts(prev => prev + 1), 500)}
-              onRead={() => setRefreshContacts(prev => prev + 1)}
-              onBack={() => {
-                setSelectedContact(null);
-                setTimeout(() => setViewingArchived(false), 300);
-              }}
-            />
-          ) : (
-            <ContactsList
-              key="contacts-list-mobile"
-              onSelectContact={handleSelectContact}
-              clinicNumber={profile?.clinic_number}
-              selectedPhone={selectedContact?.phone}
-              onArchiveChange={setViewingArchived}
-              viewingArchived={viewingArchived}
-              refreshTrigger={refreshContacts}
-            />
-          )}
-        </div>
       ) : (
         <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
           {/* Left — Contacts list */}
@@ -575,18 +545,7 @@ function Dashboard() {
                 height: '100%',
                 gap: '12px'
               }}>
-                <svg width="48" height="48" viewBox="0 0 120 120">
-                  <rect x="0" y="0" width="120" height="120" rx="22" fill="#EAF3DE" />
-                  <text x="60" y="95" fontFamily="Georgia, serif" fontSize="36" fontWeight="700" fill="#526659" textAnchor="middle" letterSpacing="-0.5">cub</text>
-                </svg>
-                <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: '14px', fontWeight: '500', color: '#2F3E46', marginBottom: '4px' }}>
-                    Select a conversation
-                  </div>
-                  <div style={{ fontSize: '12px', color: '#94A3B8' }}>
-                    Choose a patient from the list to start messaging
-                  </div>
-                </div>
+                <div>Select a conversation</div>
               </div>
             )}
           </div>
