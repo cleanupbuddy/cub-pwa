@@ -169,64 +169,64 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
   };
 
   const sendMessage = async () => {
-    const body = newMessage.trim();
-    if (!body || !clinicNumber || sending) return;
+  const body = newMessage.trim();
+  if (!body || !clinicNumber || sending) return;
 
-    setSending(true);
+  setSending(true);
 
-    const tempId = `temp-${Date.now()}`;
-    const optimisticMessage = {
-      id: tempId,
-      body,
-      direction: 'outbound',
-      to_number: contact.phone,
-      from_number: clinicNumber,
-      created_at: new Date().toISOString(),
-      status: 'sending'
-    };
+  const tempId = `temp-${Date.now()}`;
+  const optimisticMessage = {
+    id: tempId,
+    body,
+    direction: 'outbound',
+    to_number: contact.phone,
+    from_number: clinicNumber,
+    created_at: new Date().toISOString(),
+    status: 'sending'
+  };
 
-    setMessages(prev => [...prev, optimisticMessage]);
-    setNewMessage('');
+  setMessages(prev => [...prev, optimisticMessage]);
+  setNewMessage('');
 
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error('No active session');
+  try {
+    const response = await fetch(`${VERCEL_URL}/api/send-sms`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        to: contact.phone,
+        from: clinicNumber,
+        message: body
+      })
+    });
 
-      const response = await fetch(`${VERCEL_URL}/api/send-sms`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          to: contact.phone,
-          from: clinicNumber,
-          message: body,
-          practitionerId: session.user.id
-        })
-      });
+    const result = await response.json();
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to send message');
+    }
 
-      const result = await response.json();
-      if (!result.success) {
-        throw new Error(result.error || 'Failed to send message');
-      }
-
+    if (result.message) {
       setMessages(prev =>
         prev.map(msg => msg.id === tempId ? result.message : msg)
       );
-
-      if (onRead) onRead();
-    } catch (err) {
-      console.error('Send failed:', err);
-
-      setMessages(prev =>
-        prev.map(msg =>
-          msg.id === tempId
-            ? { ...msg, status: 'failed' }
-            : msg
-        )
-      );
-    } finally {
-      setSending(false);
+    } else {
+      await loadMessages();
     }
-  };
+
+    if (onRead) onRead();
+  } catch (err) {
+    console.error('Send failed:', err);
+
+    setMessages(prev =>
+      prev.map(msg =>
+        msg.id === tempId
+          ? { ...msg, status: 'failed' }
+          : msg
+      )
+    );
+  } finally {
+    setSending(false);
+  }
+};
 
   const formatTime = (timestamp) => {
     if (!timestamp) return '';
