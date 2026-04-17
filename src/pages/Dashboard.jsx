@@ -431,47 +431,37 @@ function Dashboard() {
           onProfileUpdate={loadProfile}
         />
       ) : isMobile ? (
-  <div style={{ flex: 1, display: 'flex', overflow: 'hidden', background: '#FFEEEE' }}>
-    <div style={{
-      position: 'absolute',
-      top: '70px',
-      left: '12px',
-      zIndex: 9999,
-      background: 'red',
-      color: 'white',
-      padding: '6px 10px',
-      borderRadius: '8px',
-      fontSize: '12px',
-      fontWeight: '600'
-    }}>
-      MOBILE TEST
-    </div>
+        <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
           {selectedContact ? (
-            <ChatWindow
-              contact={selectedContact}
-              clinicNumber={profile?.clinic_number}
-              therapistName={profile?.therapist_name}
-              clinicName={profile?.clinic_name}
-              practitionerNumber={profile?.practitioner_phone}
-              isArchivedView={selectedContact?.isArchived}
-              refreshTrigger={wakeRefresh}
-              onArchived={() => setTimeout(() => setRefreshContacts(prev => prev + 1), 500)}
-              onRead={() => setRefreshContacts(prev => prev + 1)}
-              onBack={() => {
-                setSelectedContact(null);
-                setTimeout(() => setViewingArchived(false), 300);
-              }}
-            />
+            <div style={{ flex: 1, width: '100%', display: 'flex', overflow: 'hidden' }}>
+              <ChatWindow
+                contact={selectedContact}
+                clinicNumber={profile?.clinic_number}
+                therapistName={profile?.therapist_name}
+                clinicName={profile?.clinic_name}
+                practitionerNumber={profile?.practitioner_phone}
+                isArchivedView={selectedContact?.isArchived}
+                refreshTrigger={wakeRefresh}
+                onArchived={() => setTimeout(() => setRefreshContacts(prev => prev + 1), 500)}
+                onRead={() => setRefreshContacts(prev => prev + 1)}
+                onBack={() => {
+                  setSelectedContact(null);
+                  setTimeout(() => setViewingArchived(false), 300);
+                }}
+              />
+            </div>
           ) : (
-            <ContactsList
-              key="contacts-list-mobile"
-              onSelectContact={handleSelectContact}
-              clinicNumber={profile?.clinic_number}
-              selectedPhone={selectedContact?.phone}
-              onArchiveChange={setViewingArchived}
-              viewingArchived={viewingArchived}
-              refreshTrigger={refreshContacts}
-            />
+            <div style={{ flex: 1, width: '100%', display: 'flex', overflow: 'hidden' }}>
+              <ContactsList
+                key="contacts-list-mobile"
+                onSelectContact={handleSelectContact}
+                clinicNumber={profile?.clinic_number}
+                selectedPhone={selectedContact?.phone}
+                onArchiveChange={setViewingArchived}
+                viewingArchived={viewingArchived}
+                refreshTrigger={refreshContacts}
+              />
+            </div>
           )}
         </div>
       ) : (

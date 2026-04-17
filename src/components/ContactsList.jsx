@@ -11,20 +11,31 @@ function ContactsList({ onSelectContact, clinicNumber, onArchiveChange, viewingA
   const [newPhone, setNewPhone] = useState('');
 
   useEffect(() => {
-    loadContacts(viewingArchived);
+    let channel;
 
-    const channel = supabase.channel('contacts:messages')
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'messages',
-        filter: `practitioner_id=eq.${session.user.id}`
-      }, () => {
-        loadContacts(viewingArchived);
-      })
-      .subscribe();
+    const setupContactsSubscription = async () => {
+      loadContacts(viewingArchived);
 
-    return () => supabase.removeChannel(channel);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      channel = supabase.channel('contacts:messages')
+        .on('postgres_changes', {
+          event: '*',
+          schema: 'public',
+          table: 'messages',
+          filter: `practitioner_id=eq.${session.user.id}`
+        }, () => {
+          loadContacts(viewingArchived);
+        })
+        .subscribe();
+    };
+
+    setupContactsSubscription();
+
+    return () => {
+      if (channel) supabase.removeChannel(channel);
+    };
   }, [viewingArchived, refreshTrigger]);
 
   const loadContacts = async (archived = viewingArchived) => {
@@ -82,7 +93,8 @@ function ContactsList({ onSelectContact, clinicNumber, onArchiveChange, viewingA
       // Add contacts with no messages
       if (contactsList) {
         contactsList.forEach(c => {
-          if (!seen.has(c.phone_number)) {
+          const alreadyExists = unique.some(u => u.phone === c.phone_number);
+          if (!alreadyExists) {
             unique.push({ phone: c.phone_number, latest: null, unreadCount: 0 });
           }
         });
