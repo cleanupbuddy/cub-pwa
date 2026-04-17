@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { setUnreadBadge } from '../lib/badge';
 
 function ContactsList({ onSelectContact, clinicNumber, onArchiveChange, viewingArchived, refreshTrigger }) {
   const [contacts, setContacts] = useState([]);
@@ -87,6 +88,9 @@ function ContactsList({ onSelectContact, clinicNumber, onArchiveChange, viewingA
         });
       }
       setContacts(unique);
+
+      const totalUnread = unique.reduce((sum, c) => sum + (c.unreadCount || 0), 0);
+      await setUnreadBadge(totalUnread);
     } catch (err) {
       console.error('Load contacts error:', err);
     } finally {
