@@ -172,36 +172,7 @@ function Dashboard() {
   };
 
   const statusColor = status === 'active' ? '#9CAF88' : status === 'session' ? '#D6BD98' : '#64748B';
-  const [isMobile, setIsMobile] = useState(
-    window.matchMedia('(max-width: 767px)').matches ||
-    /iPhone|iPod/.test(navigator.userAgent)
-  );
-
-  useEffect(() => {
-    const mediaQuery = window.matchMedia('(max-width: 767px)');
-
-    const updateMobile = () => {
-      setIsMobile(
-        mediaQuery.matches || /iPhone|iPod/.test(navigator.userAgent)
-      );
-    };
-
-    updateMobile();
-
-    if (mediaQuery.addEventListener) {
-      mediaQuery.addEventListener('change', updateMobile);
-    } else {
-      mediaQuery.addListener(updateMobile);
-    }
-
-    return () => {
-      if (mediaQuery.removeEventListener) {
-        mediaQuery.removeEventListener('change', updateMobile);
-      } else {
-        mediaQuery.removeListener(updateMobile);
-      }
-    };
-  }, []);
+  const isMobile = true;
 
   if (loading) return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#F7F6F2' }}>
