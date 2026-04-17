@@ -446,10 +446,17 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
           }}
           placeholder="Message..."
           style={{
-            flex: 1, background: '#F7F6F2', border: '0.5px solid #E2E8E1',
-            borderRadius: '16px', padding: '10px 14px', fontSize: '13px',
-            color: '#2F3E46', resize: 'none', fontFamily: "'Outfit', sans-serif",
-            outline: 'none', boxSizing: 'border-box',
+            flex: 1,
+            background: '#F7F6F2',
+            border: '0.5px solid #E2E8E1',
+            borderRadius: '16px',
+            padding: '10px 14px',
+            fontSize: '16px',
+            color: '#2F3E46',
+            resize: 'none',
+            fontFamily: "'Outfit', sans-serif",
+            outline: 'none',
+            boxSizing: 'border-box',
             minHeight: '42px',
             maxHeight: '120px',
             overflowY: 'auto'
