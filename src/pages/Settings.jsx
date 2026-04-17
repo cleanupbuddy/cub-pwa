@@ -538,19 +538,19 @@ You can book online anytime at [your booking link]"
             style={{
               width: '100%',
               padding: '12px',
-              background: '#9CAF88',
-              color: 'white',
-              border: 'none',
+              background: '#fff',
+              border: '0.5px solid #E2E8E1',
               borderRadius: '12px',
               fontSize: '11px',
               fontWeight: '600',
+              color: '#2F3E46',
               cursor: 'pointer',
               fontFamily: "'Outfit', sans-serif",
               textTransform: 'uppercase',
               letterSpacing: '0.08em'
             }}
           >
-            Enable Notifications
+            Enable Notifications →
           </button>
         </div>
 
