@@ -22,7 +22,7 @@ export async function registerPushNotifications() {
     if (session) {
       await supabase.from('practitioners')
         .update({ push_subscription: subscription })
-        .eq('user_email', session.user.email);
+        .eq('id', session.user.id);
     }
 
     return subscription;
