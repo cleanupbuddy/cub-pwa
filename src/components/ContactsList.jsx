@@ -179,7 +179,7 @@ function ContactsList({ onSelectContact, clinicNumber, onArchiveChange, viewingA
   );
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+  <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%', minWidth: 0 }}>
       {/* Search bar */}
       <div style={{ padding: '10px 12px', background: '#fff', borderBottom: '0.5px solid #E2E8E1' }}>
         {viewingArchived ? (
