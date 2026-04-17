@@ -431,7 +431,21 @@ function Dashboard() {
           onProfileUpdate={loadProfile}
         />
       ) : isMobile ? (
-        <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+  <div style={{ flex: 1, display: 'flex', overflow: 'hidden', background: '#FFEEEE' }}>
+    <div style={{
+      position: 'absolute',
+      top: '70px',
+      left: '12px',
+      zIndex: 9999,
+      background: 'red',
+      color: 'white',
+      padding: '6px 10px',
+      borderRadius: '8px',
+      fontSize: '12px',
+      fontWeight: '600'
+    }}>
+      MOBILE TEST
+    </div>
           {selectedContact ? (
             <ChatWindow
               contact={selectedContact}
