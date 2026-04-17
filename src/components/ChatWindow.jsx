@@ -17,6 +17,8 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [currentPhone, setCurrentPhone] = useState(null);
 
+  const isIPhone = /iPhone|iPod/.test(navigator.userAgent);
+
   const loadMessages = async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
@@ -279,7 +281,7 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
               autoFocus
               placeholder="Add patient name..."
               style={{
-                fontSize: '14px', fontWeight: '500', color: '#2F3E46',
+                fontSize: '16px', fontWeight: '500', color: '#2F3E46',
                 border: 'none', borderBottom: '1px solid #9CAF88',
                 outline: 'none', background: 'none', width: '100%',
                 fontFamily: "'Outfit', sans-serif", padding: '0'
@@ -364,7 +366,7 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
             <div style={{
               padding: '10px 14px',
               borderRadius: '12px',
-              fontSize: '13px',
+              fontSize: '16px',
               lineHeight: '1.5',
               background: msg.direction === 'outbound' ? '#739E6E' : '#F8F9F7',
               color: msg.direction === 'outbound' ? 'white' : '#2F3E46',
@@ -436,14 +438,17 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
           onChange={e => {
             setNewMessage(e.target.value);
             e.target.style.height = 'auto';
-            e.target.style.height = Math.min(e.target.scrollHeight, window.innerHeight * 0.15) + 'px';
+            e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
           }}
           onKeyDown={e => {
+            if (isIPhone) return;
+
             if (e.key === 'Enter' && !e.shiftKey) {
               e.preventDefault();
               sendMessage();
             }
           }}
+          enterKeyHint={isIPhone ? 'enter' : 'send'}
           placeholder="Message..."
           style={{
             flex: 1,

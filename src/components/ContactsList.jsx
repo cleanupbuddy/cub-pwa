@@ -179,7 +179,7 @@ function ContactsList({ onSelectContact, clinicNumber, onArchiveChange, viewingA
   );
 
   return (
-  <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%', minWidth: 0 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%', minWidth: 0 }}>
       {/* Search bar */}
       <div style={{ padding: '10px 12px', background: '#fff', borderBottom: '0.5px solid #E2E8E1' }}>
         {viewingArchived ? (
@@ -199,7 +199,7 @@ function ContactsList({ onSelectContact, clinicNumber, onArchiveChange, viewingA
             onChange={e => setSearch(e.target.value)}
             style={{
               flex: 1, background: '#F7F6F2', border: '0.5px solid #E2E8E1',
-              borderRadius: '20px', padding: '7px 14px', fontSize: '12px',
+              borderRadius: '20px', padding: '7px 14px', fontSize: '16px',
               color: '#2F3E46', fontFamily: "'Outfit', sans-serif", outline: 'none',
               boxSizing: 'border-box'
             }}
@@ -216,7 +216,7 @@ function ContactsList({ onSelectContact, clinicNumber, onArchiveChange, viewingA
         </div>
         {showNewChat && (
           <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', background: '#F7F6F2', border: '0.5px solid #E2E8E1', borderRadius: '10px', padding: '8px 12px', gap: '4px' }}>
-            <span style={{ fontSize: '12px', color: '#2F3E46', flexShrink: 0 }}>+1</span>
+            <span style={{ fontSize: '16px', color: '#2F3E46', flexShrink: 0 }}>+1</span>
             <input
               type="text"
               placeholder="778 555 0123"

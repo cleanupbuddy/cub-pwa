@@ -164,7 +164,7 @@ function Settings({ onBack, profile, onProfileUpdate }) {
     padding: '10px 12px',
     border: '1px solid #E2E8F0',
     borderRadius: '12px',
-    fontSize: '13px',
+    fontSize: '16px',
     backgroundColor: editable ? '#fff' : '#F1F5F9',
     color: editable ? '#2F3E46' : '#94A3B8',
     boxSizing: 'border-box',

@@ -26,7 +26,7 @@ function Dashboard() {
   const [showReportIssue, setShowReportIssue] = useState(false);
   const [showInstallBanner, setShowInstallBanner] = useState(false);
   const [showShareFeedback, setShowShareFeedback] = useState(false);
-
+  const isIPhone = /iPhone|iPod/.test(navigator.userAgent);
   useEffect(() => {
     loadProfile();
 
@@ -172,7 +172,7 @@ function Dashboard() {
   };
 
   const statusColor = status === 'active' ? '#9CAF88' : status === 'session' ? '#D6BD98' : '#64748B';
-  const isMobile = true;
+  const isIPhone = /iPhone|iPod/.test(navigator.userAgent);
 
   if (loading) return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#F7F6F2' }}>
@@ -423,17 +423,17 @@ function Dashboard() {
         )}
       </div>
 
-      {/* Settings or Split view */}
+            {/* Settings or Split view */}
       {showSettings ? (
         <Settings
           onBack={() => setShowSettings(false)}
           profile={profile}
           onProfileUpdate={loadProfile}
         />
-      ) : isMobile ? (
-        <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+      ) : isIPhone ? (
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           {selectedContact ? (
-            <div style={{ flex: 1, width: '100%', display: 'flex', overflow: 'hidden' }}>
+            <div style={{ flex: 1, width: '100%', minWidth: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
               <ChatWindow
                 contact={selectedContact}
                 clinicNumber={profile?.clinic_number}
@@ -451,7 +451,7 @@ function Dashboard() {
               />
             </div>
           ) : (
-            <div style={{ flex: 1, width: '100%', display: 'flex', overflow: 'hidden' }}>
+            <div style={{ flex: 1, width: '100%', minWidth: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
               <ContactsList
                 key="contacts-list-mobile"
                 onSelectContact={handleSelectContact}
@@ -520,7 +520,18 @@ function Dashboard() {
                 height: '100%',
                 gap: '12px'
               }}>
-                <div>Select a conversation</div>
+                <svg width="48" height="48" viewBox="0 0 120 120">
+                  <rect x="0" y="0" width="120" height="120" rx="22" fill="#EAF3DE" />
+                  <text x="60" y="95" fontFamily="Georgia, serif" fontSize="36" fontWeight="700" fill="#526659" textAnchor="middle" letterSpacing="-0.5">cub</text>
+                </svg>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: '14px', fontWeight: '500', color: '#2F3E46', marginBottom: '4px' }}>
+                    Select a conversation
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#94A3B8' }}>
+                    Choose a patient from the list to start messaging
+                  </div>
+                </div>
               </div>
             )}
           </div>
