@@ -26,7 +26,7 @@ function Dashboard() {
   const [showReportIssue, setShowReportIssue] = useState(false);
   const [showInstallBanner, setShowInstallBanner] = useState(false);
   const [showShareFeedback, setShowShareFeedback] = useState(false);
-  const isIPhone = /iPhone|iPod/.test(navigator.userAgent);
+
   useEffect(() => {
     loadProfile();
 
