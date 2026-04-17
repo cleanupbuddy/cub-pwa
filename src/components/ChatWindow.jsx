@@ -235,7 +235,6 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
       width: '100%',
       minWidth: 0,
       position: 'relative',
-      paddingBottom: 'env(safe-area-inset-bottom)',
       background: '#FDFDFD'
     }}>
 
@@ -418,13 +417,14 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
 
       {/* Input */}
       <div style={{
-        padding: '10px 12px',
+        padding: '10px 12px calc(10px + env(safe-area-inset-bottom))',
         borderTop: '0.5px solid #E2E8E1',
         background: '#fff',
         display: 'flex',
         alignItems: 'flex-end',
         gap: '8px',
-        flexShrink: 0
+        flexShrink: 0,
+        overflow: 'visible'
       }}>
 
         <textarea
