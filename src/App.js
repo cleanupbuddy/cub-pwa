@@ -8,7 +8,8 @@ import Onboarding from './pages/Onboarding';
 
 function App() {
   const [session, setSession] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true); // keep for now if already used elsewhere
+  const [isBootstrapping, setIsBootstrapping] = useState(true);
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [userEmail, setUserEmail] = useState('');
   const [paywallSkipped, setPaywallSkipped] = useState(false);
@@ -34,6 +35,7 @@ function App() {
           setIsSubscribed(false);
           setNeedsOnboarding(false);
           setLoading(false);
+          setIsBootstrapping(false);
           return;
         }
 
@@ -45,6 +47,7 @@ function App() {
         if (mounted) {
           setStartupError('CUB Line is taking longer than expected to load.');
           setLoading(false);
+          setIsBootstrapping(false);
         }
       }
     };
@@ -95,17 +98,14 @@ function App() {
           setUserEmail('');
           setIsSubscribed(false);
           setNeedsOnboarding(false);
-          setLoading(false);
           return;
         }
 
         const email = currentSession.user.email;
         setUserEmail(email);
         await checkSubscription(email);
-
       } catch (err) {
         console.error('Resume recovery error:', err);
-        setLoading(false);
       }
     };
 
@@ -117,7 +117,6 @@ function App() {
   }, []);
 
   const checkSubscription = async (email) => {
-    setLoading(true);
     try {
       setStartupError('');
 
@@ -148,12 +147,10 @@ function App() {
       console.error('Subscription check error:', err);
       setStartupError('There was a problem loading your workspace.');
       setIsSubscribed(true);
-    } finally {
-      setLoading(false);
     }
   };
 
-  if (loading) return (
+  if (isBootstrapping) return (
     <div style={{
       display: 'flex',
       alignItems: 'center',
