@@ -18,104 +18,104 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
   const [currentPhone, setCurrentPhone] = useState(null);
 
   const loadMessages = async () => {
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session) return;
-
-  setIsRefreshing(true);
-
-  const { data } = await supabase
-    .from('messages')
-    .select('*')
-    .eq('practitioner_id', session.user.id)
-    .or(`from_number.eq.${contact.phone},to_number.eq.${contact.phone}`)
-    .neq('status', 'draft')
-    .order('created_at', { ascending: true });
-
-  if (data) setMessages(data);
-
-  setIsRefreshing(false);
-};
-
-  useEffect(() => {
-  let channel;
-
-  const setupChat = async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
 
-    // Only clear when switching contacts
-    if (currentPhone !== contact.phone) {
-      setMessages([]);
-      setCurrentPhone(contact.phone);
-    }
+    setIsRefreshing(true);
 
-    await loadMessages();
-    await markAsRead();
-    await loadMessages();
+    const { data } = await supabase
+      .from('messages')
+      .select('*')
+      .eq('practitioner_id', session.user.id)
+      .or(`from_number.eq.${contact.phone},to_number.eq.${contact.phone}`)
+      .neq('status', 'draft')
+      .order('created_at', { ascending: true });
 
-    channel = supabase
-      .channel(`chat:${contact.phone}:${session.user.id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'messages',
-          filter: `practitioner_id=eq.${session.user.id}`
-        },
-        async (payload) => {
-          const row = payload.new || payload.old;
-          if (!row) return;
+    if (data) setMessages(data);
 
-          if (
-            row.from_number === contact.phone ||
-            row.to_number === contact.phone
-          ) {
-            await loadMessages();
-          }
-        }
-      )
-      .subscribe();
+    setIsRefreshing(false);
   };
-
-  setupChat();
-
-  return () => {
-    if (channel) supabase.removeChannel(channel);
-  };
-}, [contact.phone, contact.name, contact.isArchived]);
 
   useEffect(() => {
-  const handleVisibilityChange = async () => {
-    if (document.visibilityState === 'visible') {
+    let channel;
+
+    const setupChat = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      // Only clear when switching contacts
+      if (currentPhone !== contact.phone) {
+        setMessages([]);
+        setCurrentPhone(contact.phone);
+      }
+
+      await loadMessages();
+      await markAsRead();
+      await loadMessages();
+
+      channel = supabase
+        .channel(`chat:${contact.phone}:${session.user.id}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'messages',
+            filter: `practitioner_id=eq.${session.user.id}`
+          },
+          async (payload) => {
+            const row = payload.new || payload.old;
+            if (!row) return;
+
+            if (
+              row.from_number === contact.phone ||
+              row.to_number === contact.phone
+            ) {
+              await loadMessages();
+            }
+          }
+        )
+        .subscribe();
+    };
+
+    setupChat();
+
+    return () => {
+      if (channel) supabase.removeChannel(channel);
+    };
+  }, [contact.phone, contact.name, contact.isArchived]);
+
+  useEffect(() => {
+    const handleVisibilityChange = async () => {
+      if (document.visibilityState === 'visible') {
+        try {
+          await loadMessages();
+          await markAsRead();
+          await loadMessages();
+        } catch (err) {
+          console.error('Chat wake refresh error:', err);
+        }
+      }
+    };
+
+    const handlePageShow = async () => {
       try {
         await loadMessages();
         await markAsRead();
         await loadMessages();
       } catch (err) {
-        console.error('Chat wake refresh error:', err);
+        console.error('Chat pageshow refresh error:', err);
       }
-    }
-  };
+    };
 
-  const handlePageShow = async () => {
-    try {
-      await loadMessages();
-      await markAsRead();
-      await loadMessages();
-    } catch (err) {
-      console.error('Chat pageshow refresh error:', err);
-    }
-  };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('pageshow', handlePageShow);
 
-  document.addEventListener('visibilitychange', handleVisibilityChange);
-  window.addEventListener('pageshow', handlePageShow);
-
-  return () => {
-    document.removeEventListener('visibilitychange', handleVisibilityChange);
-    window.removeEventListener('pageshow', handlePageShow);
-  };
-}, [contact.phone]);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('pageshow', handlePageShow);
+    };
+  }, [contact.phone]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -228,7 +228,14 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', position: 'relative' }}>
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      height: '100%',
+      position: 'relative',
+      paddingBottom: 'env(safe-area-inset-bottom)',
+      background: '#FDFDFD'
+    }}>
 
       {/* Chat header */}
       <div style={{
@@ -243,7 +250,24 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
         top: 0,
         zIndex: 10
       }}>
-        <div style={{ flex: 1 }}>
+        <button
+          onClick={onBack}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: '#588157',
+            fontSize: '18px',
+            cursor: 'pointer',
+            padding: '4px 6px',
+            lineHeight: 1,
+            flexShrink: 0
+          }}
+          aria-label="Back to conversations"
+        >
+          ←
+        </button>
+
+        <div style={{ flex: 1, minWidth: 0 }}>
           {editingName ? (
             <input
               type="text"
@@ -322,8 +346,14 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
 
       {/* Messages */}
       <div style={{
-        flex: 1, overflowY: 'auto', padding: '14px',
-        background: '#FDFDFD', display: 'flex', flexDirection: 'column'
+        flex: 1,
+        overflowY: 'auto',
+        padding: '14px',
+        paddingBottom: '20px',
+        background: '#FDFDFD',
+        display: 'flex',
+        flexDirection: 'column',
+        WebkitOverflowScrolling: 'touch'
       }}>
         {messages.map((msg) => (
           <div key={msg.id} style={{
@@ -414,8 +444,8 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
             borderRadius: '16px', padding: '10px 14px', fontSize: '13px',
             color: '#2F3E46', resize: 'none', fontFamily: "'Outfit', sans-serif",
             outline: 'none', boxSizing: 'border-box',
-            minHeight: `${window.innerHeight * 0.15}px`,
-            maxHeight: `${window.innerHeight * 0.15}px`,
+            minHeight: '42px',
+            maxHeight: '120px',
             overflowY: 'auto'
           }}
         />
