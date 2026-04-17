@@ -200,6 +200,7 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
     });
 
     const result = await response.json();
+    console.log('SEND RESULT:', result);
     if (!result.success) {
       throw new Error(result.error || 'Failed to send message');
     }
