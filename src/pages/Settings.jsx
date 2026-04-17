@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import ExportMessages from '../components/ExportMessages';
+import { registerPushNotifications } from '../lib/notifications';
 
 import { VERCEL_URL } from '../lib/config';
 
@@ -519,6 +520,37 @@ You can book online anytime at [your booking link]"
             }}
           >
             Manage Billing →
+          </button>
+        </div>
+
+        {/* Notifications */}
+        <div style={{ marginBottom: '24px', paddingTop: '16px', borderTop: '1px solid #F1F5F9' }}>
+          <label style={labelStyle}>Notifications</label>
+          <p style={{ fontSize: '11px', color: '#94A3B8', marginBottom: '12px', lineHeight: '1.6' }}>
+            Enable push notifications to get alerted when patients message you.
+          </p>
+
+          <button
+            onClick={async () => {
+              const sub = await registerPushNotifications();
+              console.log('Push subscription:', sub);
+            }}
+            style={{
+              width: '100%',
+              padding: '12px',
+              background: '#9CAF88',
+              color: 'white',
+              border: 'none',
+              borderRadius: '12px',
+              fontSize: '11px',
+              fontWeight: '600',
+              cursor: 'pointer',
+              fontFamily: "'Outfit', sans-serif",
+              textTransform: 'uppercase',
+              letterSpacing: '0.08em'
+            }}
+          >
+            Enable Notifications
           </button>
         </div>
 
