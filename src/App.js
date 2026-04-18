@@ -15,6 +15,7 @@ function App() {
   const [paywallSkipped, setPaywallSkipped] = useState(false);
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
   const [startupError, setStartupError] = useState('');
+  const [hasResolvedAccess, setHasResolvedAccess] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -35,6 +36,7 @@ function App() {
           setNeedsOnboarding(false);
           setLoading(false);
           setIsBootstrapping(false);
+          setHasResolvedAccess(true);
           return;
         }
 
@@ -45,12 +47,14 @@ function App() {
         if (!mounted) return;
         setLoading(false);
         setIsBootstrapping(false);
+        setHasResolvedAccess(true);
       } catch (err) {
         console.error('Bootstrap error:', err);
         if (mounted) {
           setStartupError('CUB Line is taking longer than expected to load.');
           setLoading(false);
           setIsBootstrapping(false);
+          setHasResolvedAccess(true);
         }
       }
     };
@@ -66,6 +70,7 @@ function App() {
         setNeedsOnboarding(false);
         setLoading(false);
         setIsBootstrapping(false);
+        setHasResolvedAccess(true);
         return;
       }
 
@@ -75,11 +80,13 @@ function App() {
         await checkSubscription(email);
         setLoading(false);
         setIsBootstrapping(false);
+        setHasResolvedAccess(true);
       } catch (err) {
         console.error('Auth state change error:', err);
         setStartupError('There was a problem loading your account.');
         setLoading(false);
         setIsBootstrapping(false);
+        setHasResolvedAccess(true);
       }
     });
 
@@ -161,7 +168,8 @@ function App() {
     } catch (err) {
       console.error('Subscription check error:', err);
       setStartupError('There was a problem loading your workspace.');
-      setIsSubscribed(true);
+      setIsSubscribed(true); // fallback so user isn’t blocked
+      setHasResolvedAccess(true); // ✅ ADD THIS
     }
   };
 
@@ -238,11 +246,18 @@ function App() {
         <Route path="/login" element={!session ? <Login /> : <Navigate to="/" />} />
         <Route path="/*" element={
           !session ? <Navigate to="/login" /> :
-            !isSubscribed && !paywallSkipped ?
-              <Paywall userEmail={userEmail} onSkip={() => setPaywallSkipped(true)} /> :
-              needsOnboarding ?
-                <Onboarding userEmail={userEmail} onComplete={() => setNeedsOnboarding(false)} /> :
-                <Dashboard />
+            !hasResolvedAccess ? <div /> :
+              !isSubscribed && !paywallSkipped ?
+                <Paywall
+                  userEmail={userEmail}
+                  onSkip={() => setPaywallSkipped(true)}
+                  onReturnToLogin={() => {
+                    window.location.href = '/login';
+                  }}
+                /> :
+                needsOnboarding ?
+                  <Onboarding userEmail={userEmail} onComplete={() => setNeedsOnboarding(false)} /> :
+                  <Dashboard />
         } />
       </Routes>
     </BrowserRouter>
