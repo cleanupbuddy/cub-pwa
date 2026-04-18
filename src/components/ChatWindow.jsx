@@ -40,12 +40,13 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
 
   useEffect(() => {
     let channel;
+    let cancelled = false;
 
     const setupChat = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
+      if (!session || !contact?.phone || cancelled) return;
 
-      // Only clear when switching contacts
+      // Only clear when actually switching contacts
       if (currentPhone !== contact.phone) {
         setMessages([]);
         setCurrentPhone(contact.phone);
@@ -54,6 +55,8 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
       await loadMessages();
       await markAsRead();
       await loadMessages();
+
+      if (cancelled) return;
 
       channel = supabase
         .channel(`chat:${contact.phone}:${session.user.id}`)
@@ -67,7 +70,7 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
           },
           async (payload) => {
             const row = payload.new || payload.old;
-            if (!row) return;
+            if (!row || cancelled) return;
 
             if (
               row.from_number === contact.phone ||
@@ -83,9 +86,10 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
     setupChat();
 
     return () => {
+      cancelled = true;
       if (channel) supabase.removeChannel(channel);
     };
-  }, [contact.phone, contact.name, contact.isArchived]);
+  }, [contact.phone, refreshTrigger]);
 
   useEffect(() => {
     const handleVisibilityChange = async () => {
@@ -169,74 +173,74 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
   };
 
   const sendMessage = async () => {
-  const body = newMessage.trim();
-  if (!body || !clinicNumber || sending) return;
+    const body = newMessage.trim();
+    if (!body || !clinicNumber || sending) return;
 
-  setSending(true);
+    setSending(true);
 
-  const tempId = `temp-${Date.now()}`;
-  const optimisticMessage = {
-    id: tempId,
-    body,
-    direction: 'outbound',
-    to_number: contact.phone,
-    from_number: clinicNumber,
-    created_at: new Date().toISOString(),
-    status: 'sending'
+    const tempId = `temp-${Date.now()}`;
+    const optimisticMessage = {
+      id: tempId,
+      body,
+      direction: 'outbound',
+      to_number: contact.phone,
+      from_number: clinicNumber,
+      created_at: new Date().toISOString(),
+      status: 'sending'
+    };
+
+    setMessages(prev => [...prev, optimisticMessage]);
+    setNewMessage('');
+
+    try {
+      const response = await fetch(`${VERCEL_URL}/api/send-sms`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: contact.phone,
+          from: clinicNumber,
+          message: body
+        })
+      });
+
+      let result;
+
+      try {
+        result = await response.json();
+        console.log('SEND RESULT:', result);
+      } catch (err) {
+        const text = await response.text();
+        console.error('Non-JSON response:', text);
+        throw new Error('Server error (non-JSON response)');
+      }
+
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to send message');
+      }
+
+      if (result.message) {
+        setMessages(prev =>
+          prev.map(msg => msg.id === tempId ? result.message : msg)
+        );
+      } else {
+        await loadMessages();
+      }
+
+      if (onRead) onRead();
+    } catch (err) {
+      console.error('Send failed:', err);
+
+      setMessages(prev =>
+        prev.map(msg =>
+          msg.id === tempId
+            ? { ...msg, status: 'failed' }
+            : msg
+        )
+      );
+    } finally {
+      setSending(false);
+    }
   };
-
-  setMessages(prev => [...prev, optimisticMessage]);
-  setNewMessage('');
-
-  try {
-    const response = await fetch(`${VERCEL_URL}/api/send-sms`, {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    to: contact.phone,
-    from: clinicNumber,
-    message: body
-  })
-});
-
-let result;
-
-try {
-  result = await response.json();
-  console.log('SEND RESULT:', result);
-} catch (err) {
-  const text = await response.text();
-  console.error('Non-JSON response:', text);
-  throw new Error('Server error (non-JSON response)');
-}
-
-if (!result.success) {
-  throw new Error(result.error || 'Failed to send message');
-}
-
-if (result.message) {
-  setMessages(prev =>
-    prev.map(msg => msg.id === tempId ? result.message : msg)
-  );
-} else {
-  await loadMessages();
-}
-
-if (onRead) onRead();
-  } catch (err) {
-    console.error('Send failed:', err);
-
-    setMessages(prev =>
-      prev.map(msg =>
-        msg.id === tempId
-          ? { ...msg, status: 'failed' }
-          : msg
-      )
-    );
-  } finally {
-    setSending(false);
-  }
-};
 
   const formatTime = (timestamp) => {
     if (!timestamp) return '';
