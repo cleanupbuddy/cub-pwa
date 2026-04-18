@@ -158,6 +158,10 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
     }
   };
 
+  useEffect(() => {
+    setContactName(contact?.name || '');
+  }, [contact?.phone, contact?.name]);
+
   const markAsRead = async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
