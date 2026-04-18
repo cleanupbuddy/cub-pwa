@@ -190,30 +190,39 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
 
   try {
     const response = await fetch(`${VERCEL_URL}/api/send-sms`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        to: contact.phone,
-        from: clinicNumber,
-        message: body
-      })
-    });
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    to: contact.phone,
+    from: clinicNumber,
+    message: body
+  })
+});
 
-    const result = await response.json();
-    console.log('SEND RESULT:', result);
-    if (!result.success) {
-      throw new Error(result.error || 'Failed to send message');
-    }
+let result;
 
-    if (result.message) {
-      setMessages(prev =>
-        prev.map(msg => msg.id === tempId ? result.message : msg)
-      );
-    } else {
-      await loadMessages();
-    }
+try {
+  result = await response.json();
+  console.log('SEND RESULT:', result);
+} catch (err) {
+  const text = await response.text();
+  console.error('Non-JSON response:', text);
+  throw new Error('Server error (non-JSON response)');
+}
 
-    if (onRead) onRead();
+if (!result.success) {
+  throw new Error(result.error || 'Failed to send message');
+}
+
+if (result.message) {
+  setMessages(prev =>
+    prev.map(msg => msg.id === tempId ? result.message : msg)
+  );
+} else {
+  await loadMessages();
+}
+
+if (onRead) onRead();
   } catch (err) {
     console.error('Send failed:', err);
 
