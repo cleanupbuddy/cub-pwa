@@ -313,11 +313,12 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
     <div style={{
       display: 'flex',
       flexDirection: 'column',
-      height: '100%',
+      height: isIPhone ? '100dvh' : '100%',
       width: '100%',
       minWidth: 0,
       position: 'relative',
-      background: '#FDFDFD'
+      background: '#FDFDFD',
+      overflow: 'hidden'
     }}>
 
       {/* Chat header */}
@@ -433,6 +434,7 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
       {/* Messages */}
       <div style={{
         flex: 1,
+        minHeight: 0,
         overflowY: 'auto',
         padding: '14px',
         paddingTop: isIPhone ? '76x' : '14px',
