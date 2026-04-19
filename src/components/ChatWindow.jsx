@@ -324,18 +324,15 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
       {/* Chat header */}
       <div style={{
         padding: '12px 16px',
-        borderBottom: isIPhone ? '1px solid #E2E8E1' : '0.5px solid #E2E8E1',
+        borderBottom: '0.5px solid #E2E8E1',
         background: '#fff',
         display: 'flex',
         alignItems: 'center',
         gap: '10px',
         flexShrink: 0,
-        position: isIPhone ? 'fixed' : 'sticky',
+        position: 'sticky',
         top: 0,
-        left: 0,
-        right: 0,
-        zIndex: 100,
-        boxSizing: 'border-box'
+        zIndex: 10
       }}>
         <button
           onClick={onBack}
@@ -437,7 +434,7 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
         minHeight: 0,
         overflowY: 'auto',
         padding: '14px',
-        paddingTop: isIPhone ? '76x' : '14px',
+        paddingTop: '14px',
         paddingBottom: '20px',
         background: '#FDFDFD',
         display: 'flex',
