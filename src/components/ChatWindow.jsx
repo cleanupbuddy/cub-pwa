@@ -250,6 +250,36 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
     if (!timestamp) return '';
     return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
+  const formatDaySeparator = (timestamp) => {
+    if (!timestamp) return '';
+
+    const messageDate = new Date(timestamp);
+    const today = new Date();
+    const yesterday = new Date();
+    yesterday.setDate(today.getDate() - 1);
+
+    const isSameDay = (a, b) =>
+      a.getFullYear() === b.getFullYear() &&
+      a.getMonth() === b.getMonth() &&
+      a.getDate() === b.getDate();
+
+    if (isSameDay(messageDate, today)) return 'Today';
+    if (isSameDay(messageDate, yesterday)) return 'Yesterday';
+
+    const diffInDays = Math.floor(
+      (today.setHours(0, 0, 0, 0) - new Date(messageDate).setHours(0, 0, 0, 0)) / 86400000
+    );
+
+    if (diffInDays < 7) {
+      return messageDate.toLocaleDateString([], { weekday: 'long' });
+    }
+
+    return messageDate.toLocaleDateString([], {
+      month: 'long',
+      day: 'numeric',
+      year: messageDate.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined
+    });
+  };
 
   const archiveConversation = async (archive = true) => {
     try {
@@ -293,15 +323,18 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
       {/* Chat header */}
       <div style={{
         padding: '12px 16px',
-        borderBottom: '0.5px solid #E2E8E1',
+        borderBottom: isIPhone ? '1px solid #E2E8E1' : '0.5px solid #E2E8E1',
         background: '#fff',
         display: 'flex',
         alignItems: 'center',
         gap: '10px',
         flexShrink: 0,
-        position: 'sticky',
+        position: isIPhone ? 'fixed' : 'sticky',
         top: 0,
-        zIndex: 10
+        left: 0,
+        right: 0,
+        zIndex: 100,
+        boxSizing: 'border-box'
       }}>
         <button
           onClick={onBack}
@@ -402,41 +435,74 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
         flex: 1,
         overflowY: 'auto',
         padding: '14px',
+        paddingTop: isIPhone ? '76x' : '14px',
         paddingBottom: '20px',
         background: '#FDFDFD',
         display: 'flex',
         flexDirection: 'column',
         WebkitOverflowScrolling: 'touch'
       }}>
-        {messages.map((msg) => (
-          <div key={msg.id} style={{
-            alignSelf: msg.direction === 'outbound' ? 'flex-end' : 'flex-start',
-            maxWidth: '75%', marginBottom: '12px'
-          }}>
-            <div style={{
-              padding: '10px 14px',
-              borderRadius: '12px',
-              fontSize: '16px',
-              lineHeight: '1.5',
-              background: msg.direction === 'outbound' ? '#739E6E' : '#F8F9F7',
-              color: msg.direction === 'outbound' ? 'white' : '#2F3E46',
-              border: msg.direction === 'inbound' ? '0.5px solid #E2E8E1' : 'none',
-              borderBottomRightRadius: msg.direction === 'outbound' ? '2px' : '12px',
-              borderBottomLeftRadius: msg.direction === 'inbound' ? '2px' : '12px',
-            }}>
-              {msg.body}
-            </div>
-            <div style={{
-              fontSize: '9px', color: '#94A3B8', marginTop: '3px',
-              textAlign: msg.direction === 'outbound' ? 'right' : 'left'
-            }}>
-              {formatTime(msg.created_at)}
-            </div>
-          </div>
-        ))}
+        {messages.map((msg, index) => {
+          const prevMsg = messages[index - 1];
+
+          const isNewDay =
+            !prevMsg ||
+            new Date(prevMsg.created_at).toDateString() !== new Date(msg.created_at).toDateString();
+
+          return (
+            <React.Fragment key={msg.id}>
+              {isNewDay && (
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'center',
+                  margin: '8px 0 14px'
+                }}>
+                  <div style={{
+                    fontSize: '10px',
+                    color: '#94A3B8',
+                    background: '#F7F6F2',
+                    border: '0.5px solid #E2E8E1',
+                    borderRadius: '999px',
+                    padding: '4px 10px',
+                    fontWeight: '500'
+                  }}>
+                    {formatDaySeparator(msg.created_at)}
+                  </div>
+                </div>
+              )}
+
+              <div style={{
+                alignSelf: msg.direction === 'outbound' ? 'flex-end' : 'flex-start',
+                maxWidth: '75%',
+                marginBottom: '12px'
+              }}>
+                <div style={{
+                  padding: '10px 14px',
+                  borderRadius: '12px',
+                  fontSize: '13px',
+                  lineHeight: '1.5',
+                  background: msg.direction === 'outbound' ? '#739E6E' : '#F8F9F7',
+                  color: msg.direction === 'outbound' ? 'white' : '#2F3E46',
+                  border: msg.direction === 'inbound' ? '0.5px solid #E2E8E1' : 'none',
+                  borderBottomRightRadius: msg.direction === 'outbound' ? '2px' : '12px',
+                  borderBottomLeftRadius: msg.direction === 'inbound' ? '2px' : '12px',
+                }}>
+                  {msg.body}
+                </div>
+                <div style={{
+                  fontSize: '9px',
+                  color: '#94A3B8',
+                  marginTop: '3px',
+                  textAlign: msg.direction === 'outbound' ? 'right' : 'left'
+                }}>
+                  {formatTime(msg.created_at)}
+                </div>
+              </div>
+            </React.Fragment>
+          );
+        })}
         <div ref={bottomRef} />
       </div>
-
       {/* Quick actions */}
       <div style={{
         padding: '8px 12px',

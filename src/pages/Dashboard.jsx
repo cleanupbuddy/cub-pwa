@@ -257,173 +257,176 @@ function Dashboard() {
       )}
 
       {/* Header */}
-      <div style={{
-        background: '#fff',
-        padding: '14px 16px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        borderBottom: '0.5px solid #E2E8E1',
-        flexShrink: 0,
-        position: 'relative'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+      {!(isIPhone && selectedContact) && (
+        <div style={{
+          background: '#fff',
+          padding: '14px 16px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          borderBottom: '0.5px solid #E2E8E1',
+          flexShrink: 0,
+          position: 'relative'
+        }}>
 
-          {/* Status dot */}
-          <div
-            style={{
-              width: '9px', height: '9px', borderRadius: '50%',
-              background: statusColor, border: '1.5px solid #fff',
-              boxShadow: `0 0 0 1.5px ${statusColor}`,
-              flexShrink: 0
-            }}
-          />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
 
-          <div>
-            <div style={{ fontSize: '13px', fontWeight: '500', color: '#2F3E46' }}>
-              {profile?.therapist_name || 'CUB Practitioner'}
-              {profile?.profession_type ? ` · ${profile.profession_type}` : ''}
-            </div>
-            <div style={{ fontSize: '10px', color: '#94A3B8' }}>
-              {profile?.clinic_name || 'Loading...'}
+            {/* Status dot */}
+            <div
+              style={{
+                width: '9px', height: '9px', borderRadius: '50%',
+                background: statusColor, border: '1.5px solid #fff',
+                boxShadow: `0 0 0 1.5px ${statusColor}`,
+                flexShrink: 0
+              }}
+            />
+
+            <div>
+              <div style={{ fontSize: '13px', fontWeight: '500', color: '#2F3E46' }}>
+                {profile?.therapist_name || 'CUB Practitioner'}
+                {profile?.profession_type ? ` · ${profile.profession_type}` : ''}
+              </div>
+              <div style={{ fontSize: '10px', color: '#94A3B8' }}>
+                {profile?.clinic_name || 'Loading...'}
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Hamburger button */}
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            setShowStatusMenu(!showStatusMenu);
-          }}
-          style={{
-            background: 'none', border: 'none', cursor: 'pointer',
-            display: 'flex', flexDirection: 'column', justifyContent: 'center',
-            alignItems: 'center', gap: '4px', padding: '4px', width: '32px', height: '32px'
-          }}
-        >
-          <span style={{ width: '16px', height: '1.5px', background: '#588157', borderRadius: '2px', display: 'block' }}></span>
-          <span style={{ width: '16px', height: '1.5px', background: '#588157', borderRadius: '2px', display: 'block' }}></span>
-          <span style={{ width: '16px', height: '1.5px', background: '#588157', borderRadius: '2px', display: 'block' }}></span>
-        </button>
+          {/* Hamburger button */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowStatusMenu(!showStatusMenu);
+            }}
+            style={{
+              background: 'none', border: 'none', cursor: 'pointer',
+              display: 'flex', flexDirection: 'column', justifyContent: 'center',
+              alignItems: 'center', gap: '4px', padding: '4px', width: '32px', height: '32px'
+            }}
+          >
+            <span style={{ width: '16px', height: '1.5px', background: '#588157', borderRadius: '2px', display: 'block' }}></span>
+            <span style={{ width: '16px', height: '1.5px', background: '#588157', borderRadius: '2px', display: 'block' }}></span>
+            <span style={{ width: '16px', height: '1.5px', background: '#588157', borderRadius: '2px', display: 'block' }}></span>
+          </button>
 
-        {/* Hamburger dropdown */}
-        {showStatusMenu && (
-          <div style={{
-            position: 'absolute', top: '52px', right: '12px',
-            background: '#fff', border: '0.5px solid #E2E8E1',
-            borderRadius: '12px', padding: '6px', width: '180px',
-            boxShadow: '0 4px 16px rgba(0,0,0,0.08)', zIndex: 100
-          }}>
-            {[
-              { value: 'active', label: 'Active', color: '#9CAF88' },
-              { value: 'session', label: 'In Session', color: '#D6BD98' },
-              { value: 'off', label: 'Off Duty', color: '#64748B' }
-            ].map(s => (
+          {/* Hamburger dropdown */}
+          {showStatusMenu && (
+            <div style={{
+              position: 'absolute', top: '52px', right: '12px',
+              background: '#fff', border: '0.5px solid #E2E8E1',
+              borderRadius: '12px', padding: '6px', width: '180px',
+              boxShadow: '0 4px 16px rgba(0,0,0,0.08)', zIndex: 100
+            }}>
+              {[
+                { value: 'active', label: 'Active', color: '#9CAF88' },
+                { value: 'session', label: 'In Session', color: '#D6BD98' },
+                { value: 'off', label: 'Off Duty', color: '#64748B' }
+              ].map(s => (
+                <div
+                  key={s.value}
+                  onClick={() => updateStatus(s.value)}
+                  style={{
+                    padding: '9px 12px', fontSize: '12px', color: '#2F3E46',
+                    borderRadius: '8px', cursor: 'pointer', display: 'flex',
+                    alignItems: 'center', gap: '8px',
+                    background: status === s.value ? '#F0F4EE' : 'transparent'
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.background = '#F7F6F2'}
+                  onMouseLeave={e => e.currentTarget.style.background = status === s.value ? '#F0F4EE' : 'transparent'}
+                >
+                  <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: s.color }}></div>
+                  {s.label}
+                </div>
+              ))}
+
+              <div style={{ height: '0.5px', background: '#E2E8E1', margin: '4px 0' }} />
+
               <div
-                key={s.value}
-                onClick={() => updateStatus(s.value)}
+                onClick={() => {
+                  setShowStatusMenu(false);
+                  handleSwitchAccount();
+                }}
                 style={{
                   padding: '9px 12px', fontSize: '12px', color: '#2F3E46',
-                  borderRadius: '8px', cursor: 'pointer', display: 'flex',
-                  alignItems: 'center', gap: '8px',
-                  background: status === s.value ? '#F0F4EE' : 'transparent'
+                  borderRadius: '8px', cursor: 'pointer'
                 }}
                 onMouseEnter={e => e.currentTarget.style.background = '#F7F6F2'}
-                onMouseLeave={e => e.currentTarget.style.background = status === s.value ? '#F0F4EE' : 'transparent'}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
               >
-                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: s.color }}></div>
-                {s.label}
+                Switch Account
               </div>
-            ))}
 
-            <div style={{ height: '0.5px', background: '#E2E8E1', margin: '4px 0' }} />
+              <div style={{ height: '0.5px', background: '#E2E8E1', margin: '4px 0' }} />
 
-            <div
-              onClick={() => {
-                setShowStatusMenu(false);
-                handleSwitchAccount();
-              }}
-              style={{
-                padding: '9px 12px', fontSize: '12px', color: '#2F3E46',
-                borderRadius: '8px', cursor: 'pointer'
-              }}
-              onMouseEnter={e => e.currentTarget.style.background = '#F7F6F2'}
-              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-            >
-              Switch Account
+              <div
+                onClick={() => { setShowStatusMenu(false); setShowSettings(true); }}
+                style={{
+                  padding: '9px 12px', fontSize: '12px', color: '#2F3E46',
+                  borderRadius: '8px', cursor: 'pointer'
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = '#F7F6F2'}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+              >
+                Settings
+              </div>
+
+              <div style={{ height: '0.5px', background: '#E2E8E1', margin: '4px 0' }} />
+
+              <div
+                onClick={() => { setShowStatusMenu(false); window.open('https://getcubsuite.com/#faq', '_blank'); }}
+                style={{
+                  padding: '9px 12px', fontSize: '12px', color: '#2F3E46',
+                  borderRadius: '8px', cursor: 'pointer'
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = '#F7F6F2'}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+              >
+                Help & FAQ
+              </div>
+
+              <div
+                onClick={() => { setShowStatusMenu(false); setShowShareFeedback(true); }}
+                style={{
+                  padding: '9px 12px', fontSize: '12px', color: '#2F3E46',
+                  borderRadius: '8px', cursor: 'pointer'
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = '#F7F6F2'}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+              >
+                Share Feedback
+              </div>
+
+              <div
+                onClick={() => { setShowStatusMenu(false); setShowReportIssue(true); }}
+                style={{
+                  padding: '9px 12px', fontSize: '12px', color: '#2F3E46',
+                  borderRadius: '8px', cursor: 'pointer'
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = '#F7F6F2'}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+              >
+                Report an Issue
+              </div>
+
+              <div style={{ height: '0.5px', background: '#E2E8E1', margin: '4px 0' }} />
+
+              <div
+                onClick={() => { setShowStatusMenu(false); handleSignOut(); }}
+                style={{
+                  padding: '9px 12px', fontSize: '12px', color: '#94A3B8',
+                  borderRadius: '8px', cursor: 'pointer'
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = '#F7F6F2'}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+              >
+                Sign Out
+              </div>
             </div>
+          )}
+        </div>
+      )}
 
-            <div style={{ height: '0.5px', background: '#E2E8E1', margin: '4px 0' }} />
-
-            <div
-              onClick={() => { setShowStatusMenu(false); setShowSettings(true); }}
-              style={{
-                padding: '9px 12px', fontSize: '12px', color: '#2F3E46',
-                borderRadius: '8px', cursor: 'pointer'
-              }}
-              onMouseEnter={e => e.currentTarget.style.background = '#F7F6F2'}
-              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-            >
-              Settings
-            </div>
-
-            <div style={{ height: '0.5px', background: '#E2E8E1', margin: '4px 0' }} />
-
-            <div
-              onClick={() => { setShowStatusMenu(false); window.open('https://getcubsuite.com/#faq', '_blank'); }}
-              style={{
-                padding: '9px 12px', fontSize: '12px', color: '#2F3E46',
-                borderRadius: '8px', cursor: 'pointer'
-              }}
-              onMouseEnter={e => e.currentTarget.style.background = '#F7F6F2'}
-              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-            >
-              Help & FAQ
-            </div>
-
-            <div
-              onClick={() => { setShowStatusMenu(false); setShowShareFeedback(true); }}
-              style={{
-                padding: '9px 12px', fontSize: '12px', color: '#2F3E46',
-                borderRadius: '8px', cursor: 'pointer'
-              }}
-              onMouseEnter={e => e.currentTarget.style.background = '#F7F6F2'}
-              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-            >
-              Share Feedback
-            </div>
-
-            <div
-              onClick={() => { setShowStatusMenu(false); setShowReportIssue(true); }}
-              style={{
-                padding: '9px 12px', fontSize: '12px', color: '#2F3E46',
-                borderRadius: '8px', cursor: 'pointer'
-              }}
-              onMouseEnter={e => e.currentTarget.style.background = '#F7F6F2'}
-              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-            >
-              Report an Issue
-            </div>
-
-            <div style={{ height: '0.5px', background: '#E2E8E1', margin: '4px 0' }} />
-
-            <div
-              onClick={() => { setShowStatusMenu(false); handleSignOut(); }}
-              style={{
-                padding: '9px 12px', fontSize: '12px', color: '#94A3B8',
-                borderRadius: '8px', cursor: 'pointer'
-              }}
-              onMouseEnter={e => e.currentTarget.style.background = '#F7F6F2'}
-              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-            >
-              Sign Out
-            </div>
-          </div>
-        )}
-      </div>
-
-            {/* Settings or Split view */}
+      {/* Settings or Split view */}
       {showSettings ? (
         <Settings
           onBack={() => setShowSettings(false)}
