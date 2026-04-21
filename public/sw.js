@@ -12,13 +12,18 @@ self.addEventListener('push', (event) => {
   };
 
   event.waitUntil((async () => {
-    if ('setAppBadge' in navigator) {
-      try {
-        const unreadCount = Number(data.unreadCount || 1);
-        await navigator.setAppBadge(unreadCount);
-      } catch (err) {
-        console.error('SW badge error:', err);
+    try {
+      const unreadCount = Number(data.unreadCount || 1);
+
+      if (self.registration.setAppBadge) {
+        if (unreadCount > 0) {
+          await self.registration.setAppBadge(unreadCount);
+        } else if (self.registration.clearAppBadge) {
+          await self.registration.clearAppBadge();
+        }
       }
+    } catch (err) {
+      console.error('SW badge error:', err);
     }
 
     await self.registration.showNotification(title, options);

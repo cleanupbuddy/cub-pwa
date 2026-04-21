@@ -532,8 +532,18 @@ You can book online anytime at [your booking link]"
 
           <button
             onClick={async () => {
-              const sub = await registerPushNotifications();
-              console.log('Push subscription:', sub);
+              const result = await registerPushNotifications();
+              console.log('Push subscription result:', result);
+
+              if (result?.ok) {
+                alert('Notifications enabled on this device.');
+              } else if (result?.reason === 'denied') {
+                alert('Notifications were not allowed on this device.');
+              } else if (result?.reason === 'unsupported') {
+                alert('Push notifications are not supported here.');
+              } else {
+                alert('Could not enable notifications on this device.');
+              }
             }}
             style={{
               width: '100%',

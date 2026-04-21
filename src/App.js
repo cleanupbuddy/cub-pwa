@@ -16,38 +16,71 @@ function App() {
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
   const [startupError, setStartupError] = useState('');
   const [hasResolvedAccess, setHasResolvedAccess] = useState(false);
+  const [isResolving, setIsResolving] = useState(false);
+
+  const recoverAccess = async () => {
+    try {
+      return await resolveAppAccess();
+    } catch (err) {
+      console.error('Recovery failed:', err);
+      return false;
+    }
+  };
+
+  const resolveAppAccess = async (targetSession = null) => {
+    if (isResolving) return true;
+
+    setIsResolving(true);
+
+    try {
+      const activeSession =
+        targetSession ??
+        (await supabase.auth.getSession()).data.session;
+
+      setSession(activeSession);
+
+      if (!activeSession) {
+        setUserEmail('');
+        setIsSubscribed(false);
+        setNeedsOnboarding(false);
+        setLoading(false);
+        setHasResolvedAccess(true);
+
+        setIsResolving(false);
+        return true;
+      }
+
+      const email = activeSession.user.email;
+      setUserEmail(email);
+
+      await checkSubscription(email);
+
+      setLoading(false);
+      setHasResolvedAccess(true);
+
+      setIsResolving(false);
+      return true;
+
+    } catch (err) {
+      console.error('resolveAppAccess error:', err);
+
+      setStartupError('CUB Line had trouble restoring your session.');
+      setLoading(false);
+      setHasResolvedAccess(true);
+
+      setIsResolving(false);
+      return false;
+    }
+  };
 
   useEffect(() => {
     let mounted = true;
 
     const bootstrap = async () => {
       try {
-        const { data, error } = await supabase.auth.getSession();
-        if (error) throw error;
-
-        const currentSession = data.session;
+        await resolveAppAccess();
         if (!mounted) return;
-
-        setSession(currentSession);
-
-        if (!currentSession) {
-          setUserEmail('');
-          setIsSubscribed(false);
-          setNeedsOnboarding(false);
-          setLoading(false);
-          setIsBootstrapping(false);
-          setHasResolvedAccess(true);
-          return;
-        }
-
-        const email = currentSession.user.email;
-        setUserEmail(email);
-        await checkSubscription(email);
-
-        if (!mounted) return;
-        setLoading(false);
         setIsBootstrapping(false);
-        setHasResolvedAccess(true);
       } catch (err) {
         console.error('Bootstrap error:', err);
         if (mounted) {
@@ -61,26 +94,10 @@ function App() {
 
     bootstrap();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setSession(session);
-
-      if (!session) {
-        setUserEmail('');
-        setIsSubscribed(false);
-        setNeedsOnboarding(false);
-        setLoading(false);
-        setIsBootstrapping(false);
-        setHasResolvedAccess(true);
-        return;
-      }
-
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, nextSession) => {
       try {
-        const email = session.user.email;
-        setUserEmail(email);
-        await checkSubscription(email);
-        setLoading(false);
+        await resolveAppAccess(nextSession);
         setIsBootstrapping(false);
-        setHasResolvedAccess(true);
       } catch (err) {
         console.error('Auth state change error:', err);
         setStartupError('There was a problem loading your account.');
@@ -106,26 +123,44 @@ function App() {
   }, []);
 
   useEffect(() => {
+    if (!session || hasResolvedAccess) return;
+
+    let cancelled = false;
+    let timeout;
+
+    const runRecovery = async () => {
+      const success = await recoverAccess();
+      if (cancelled || success) return;
+
+      timeout = setTimeout(async () => {
+        if (cancelled) return;
+
+        console.log('🔄 Attempting fallback recovery...');
+
+        const recovered = await recoverAccess();
+
+        if (!recovered && !cancelled) {
+          setStartupError('CUB Line had trouble restoring your session.');
+          setHasResolvedAccess(true);
+          setLoading(false);
+        }
+      }, 2500);
+    };
+
+    runRecovery();
+
+    return () => {
+      cancelled = true;
+      if (timeout) clearTimeout(timeout);
+    };
+  }, [session, hasResolvedAccess]);
+
+  useEffect(() => {
     const handleVisibilityChange = async () => {
       if (document.visibilityState !== 'visible') return;
 
       try {
-        const { data, error } = await supabase.auth.getSession();
-        if (error) throw error;
-
-        const currentSession = data.session;
-        setSession(currentSession);
-
-        if (!currentSession) {
-          setUserEmail('');
-          setIsSubscribed(false);
-          setNeedsOnboarding(false);
-          return;
-        }
-
-        const email = currentSession.user.email;
-        setUserEmail(email);
-        await checkSubscription(email);
+        await resolveAppAccess();
       } catch (err) {
         console.error('Resume recovery error:', err);
       }
@@ -168,8 +203,8 @@ function App() {
     } catch (err) {
       console.error('Subscription check error:', err);
       setStartupError('There was a problem loading your workspace.');
-      setIsSubscribed(true); // fallback so user isn’t blocked
-      setHasResolvedAccess(true); // ✅ ADD THIS
+      setIsSubscribed(true);
+      setHasResolvedAccess(true);
     }
   };
 
@@ -246,7 +281,54 @@ function App() {
         <Route path="/login" element={!session ? <Login /> : <Navigate to="/" />} />
         <Route path="/*" element={
           !session ? <Navigate to="/login" /> :
-            !hasResolvedAccess ? <div /> :
+            !hasResolvedAccess ? (
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                height: '100vh',
+                background: '#F7F6F2',
+                padding: '24px'
+              }}>
+                <div style={{
+                  textAlign: 'center',
+                  maxWidth: '320px',
+                  fontFamily: "'Outfit', sans-serif"
+                }}>
+                  <div style={{
+                    color: '#2F3E46',
+                    fontSize: '16px',
+                    fontWeight: '600',
+                    marginBottom: '8px'
+                  }}>
+                    Loading your workspace...
+                  </div>
+                  <div style={{
+                    color: '#6B7280',
+                    fontSize: '13px',
+                    lineHeight: '1.5',
+                    marginBottom: '16px'
+                  }}>
+                    This is taking longer than expected — reconnecting...
+                  </div>
+                  <button
+                    onClick={() => window.location.reload()}
+                    style={{
+                      background: '#588157',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: '12px',
+                      padding: '10px 16px',
+                      fontSize: '13px',
+                      cursor: 'pointer',
+                      fontFamily: "'Outfit', sans-serif"
+                    }}
+                  >
+                    Reload app
+                  </button>
+                </div>
+              </div>
+            ) :
               !isSubscribed && !paywallSkipped ?
                 <Paywall
                   userEmail={userEmail}

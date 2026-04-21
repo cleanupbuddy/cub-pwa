@@ -10,13 +10,49 @@ function ContactsList({ onSelectContact, clinicNumber, onArchiveChange, viewingA
   const [showNewChat, setShowNewChat] = useState(false);
   const [newPhone, setNewPhone] = useState('');
 
+  const getActiveSession = async () => {
+    let session = null;
+
+    for (let i = 0; i < 3; i++) {
+      const { data, error } = await supabase.auth.getSession();
+      if (error) throw error;
+
+      session = data.session;
+      if (session) return session;
+
+      await new Promise(resolve => setTimeout(resolve, 300));
+    }
+
+    return null;
+  };
+
+  useEffect(() => {
+    const handleVisibilityChange = async () => {
+      if (document.visibilityState === 'visible') {
+        await loadContacts();
+      }
+    };
+
+    const handlePageShow = async () => {
+      await loadContacts();
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('pageshow', handlePageShow);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('pageshow', handlePageShow);
+    };
+  }, [viewingArchived, clinicNumber]);
+
   useEffect(() => {
     let channel;
 
     const setupContactsSubscription = async () => {
       loadContacts(viewingArchived);
 
-      const { data: { session } } = await supabase.auth.getSession();
+      const session = await getActiveSession();
       if (!session) return;
 
       channel = supabase.channel('contacts:messages')
@@ -39,14 +75,25 @@ function ContactsList({ onSelectContact, clinicNumber, onArchiveChange, viewingA
   }, [viewingArchived, refreshTrigger]);
 
   const loadContacts = async (archived = viewingArchived) => {
+    setLoading(true);
+
+    const fallbackTimeout = setTimeout(() => {
+      console.warn('Contacts load timed out');
+      setLoading(false);
+    }, 5000);
+
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
+      const session = await getActiveSession();
+      if (!session || !clinicNumber) {
+        setContacts([]);
+        setContactMap({});
+        return;
+      }
 
       const { data: messages } = await supabase
         .from('messages')
         .select('from_number, to_number, direction, body, created_at, is_read, is_archived')
-        .eq('practitioner_id', session.user.id) // ✅ ADD THIS
+        .eq('practitioner_id', session.user.id)
         .eq('is_archived', archived === true)
         .neq('status', 'draft')
         .order('created_at', { ascending: false });
@@ -59,7 +106,9 @@ function ContactsList({ onSelectContact, clinicNumber, onArchiveChange, viewingA
 
       const map = {};
       if (contactsList) {
-        contactsList.forEach(c => { map[c.phone_number] = c.display_name; });
+        contactsList.forEach(c => {
+          map[c.phone_number] = c.display_name;
+        });
       }
       setContactMap(map);
 
@@ -77,12 +126,10 @@ function ContactsList({ onSelectContact, clinicNumber, onArchiveChange, viewingA
           };
         }
 
-        // Count unread inbound
         if (msg.direction === 'inbound' && !msg.is_read) {
           threads[num].unreadCount += 1;
         }
 
-        // Ensure latest message is correct
         if (new Date(msg.created_at) > new Date(threads[num].latest.created_at)) {
           threads[num].latest = msg;
         }
@@ -90,7 +137,6 @@ function ContactsList({ onSelectContact, clinicNumber, onArchiveChange, viewingA
 
       const unique = Object.values(threads);
 
-      // Add contacts with no messages
       if (contactsList) {
         contactsList.forEach(c => {
           const alreadyExists = unique.some(u => u.phone === c.phone_number);
@@ -99,13 +145,16 @@ function ContactsList({ onSelectContact, clinicNumber, onArchiveChange, viewingA
           }
         });
       }
+
       setContacts(unique);
 
       const totalUnread = unique.reduce((sum, c) => sum + (c.unreadCount || 0), 0);
       await setUnreadBadge(totalUnread);
     } catch (err) {
       console.error('Load contacts error:', err);
+      setContacts([]);
     } finally {
+      clearTimeout(fallbackTimeout);
       setLoading(false);
     }
   };
@@ -219,12 +268,12 @@ function ContactsList({ onSelectContact, clinicNumber, onArchiveChange, viewingA
             <span style={{ fontSize: '16px', color: '#2F3E46', flexShrink: 0 }}>+1</span>
             <input
               type="text"
-              placeholder="778 555 0123"
+              placeholder="7785550123"
               value={newPhone}
               onChange={e => setNewPhone(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && startNewChat()}
               style={{
-                border: 'none', background: 'none', fontSize: '12px',
+                border: 'none', background: 'none', fontSize: '16px',
                 fontFamily: "'Outfit', sans-serif", outline: 'none',
                 width: '100%', color: '#2F3E46'
               }}

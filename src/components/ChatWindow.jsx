@@ -19,23 +19,53 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
 
   const isIPhone = /iPhone|iPod/.test(navigator.userAgent);
 
+  const getActiveSession = async () => {
+    let session = null;
+
+    for (let i = 0; i < 3; i++) {
+      const { data, error } = await supabase.auth.getSession();
+      if (error) throw error;
+
+      session = data.session;
+      if (session) return session;
+
+      await new Promise(resolve => setTimeout(resolve, 300));
+    }
+
+    return null;
+  };
+
   const loadMessages = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return;
+    const session = await getActiveSession();
+    if (!session || !contact?.phone) {
+      setMessages([]);
+      return;
+    }
 
     setIsRefreshing(true);
 
-    const { data } = await supabase
-      .from('messages')
-      .select('*')
-      .eq('practitioner_id', session.user.id)
-      .or(`from_number.eq.${contact.phone},to_number.eq.${contact.phone}`)
-      .neq('status', 'draft')
-      .order('created_at', { ascending: true });
+    const fallbackTimeout = setTimeout(() => {
+      console.warn('Messages load timed out');
+      setIsRefreshing(false);
+    }, 5000);
 
-    if (data) setMessages(data);
+    try {
+      const { data } = await supabase
+        .from('messages')
+        .select('*')
+        .eq('practitioner_id', session.user.id)
+        .or(`from_number.eq.${contact.phone},to_number.eq.${contact.phone}`)
+        .neq('status', 'draft')
+        .order('created_at', { ascending: true });
 
-    setIsRefreshing(false);
+      if (data) setMessages(data);
+    } catch (err) {
+      console.error('Load messages error:', err);
+      setMessages([]);
+    } finally {
+      clearTimeout(fallbackTimeout);
+      setIsRefreshing(false);
+    }
   };
 
   useEffect(() => {
@@ -43,7 +73,7 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
     let cancelled = false;
 
     const setupChat = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const session = await getActiveSession();
       if (!session || !contact?.phone || cancelled) return;
 
       // Only clear when actually switching contacts
@@ -163,7 +193,7 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
   }, [contact?.phone, contact?.name]);
 
   const markAsRead = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
+    const session = await getActiveSession();
     if (!session) return;
 
     await supabase
@@ -176,8 +206,8 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
     if (onRead) onRead();
   };
 
-  const sendMessage = async () => {
-    const body = newMessage.trim();
+  const sendMessage = async (overrideBody = null) => {
+    const body = (overrideBody ?? newMessage).trim();
     if (!body || !clinicNumber || sending) return;
 
     setSending(true);
@@ -237,13 +267,20 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
       setMessages(prev =>
         prev.map(msg =>
           msg.id === tempId
-            ? { ...msg, status: 'failed' }
+            ? { ...msg, status: 'failed', isLocalFailure: true }
             : msg
         )
       );
     } finally {
       setSending(false);
     }
+  };
+
+  const retryMessage = async (failedMsg) => {
+    if (!failedMsg?.body || sending) return;
+
+    setMessages(prev => prev.filter(msg => msg.id !== failedMsg.id));
+    await sendMessage(failedMsg.body);
   };
 
   const formatTime = (timestamp) => {
@@ -442,6 +479,19 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
         WebkitOverflowScrolling: 'touch'
       }}>
         {messages.map((msg, index) => {
+
+          if (msg.direction === 'system') {
+            return (
+              <div key={msg.id} style={{
+                textAlign: 'center',
+                fontSize: '11px',
+                color: '#94A3B8',
+                margin: '10px 0'
+              }}>
+                {msg.body} · {formatTime(msg.created_at)}
+              </div>
+            );
+          }
           const prevMsg = messages[index - 1];
 
           const isNewDay =
@@ -475,26 +525,46 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
                 maxWidth: '75%',
                 marginBottom: '12px'
               }}>
-                <div style={{
-                  padding: '10px 14px',
-                  borderRadius: '12px',
-                  fontSize: '13px',
-                  lineHeight: '1.5',
-                  background: msg.direction === 'outbound' ? '#739E6E' : '#F8F9F7',
-                  color: msg.direction === 'outbound' ? 'white' : '#2F3E46',
-                  border: msg.direction === 'inbound' ? '0.5px solid #E2E8E1' : 'none',
-                  borderBottomRightRadius: msg.direction === 'outbound' ? '2px' : '12px',
-                  borderBottomLeftRadius: msg.direction === 'inbound' ? '2px' : '12px',
-                }}>
+                <div
+                  onClick={() => {
+                    if (msg.direction === 'outbound' && msg.isLocalFailure) {
+                      retryMessage(msg);
+                    }
+                  }}
+                  style={{
+                    padding: '10px 14px',
+                    borderRadius: '12px',
+                    fontSize: '13px',
+                    lineHeight: '1.5',
+                    background:
+                      msg.direction === 'outbound'
+                        ? msg.isLocalFailure
+                          ? '#E57373'
+                          : '#739E6E'
+                        : '#F8F9F7',
+                    color: msg.direction === 'outbound' ? 'white' : '#2F3E46',
+                    border: msg.direction === 'inbound' ? '0.5px solid #E2E8E1' : 'none',
+                    borderBottomRightRadius: msg.direction === 'outbound' ? '2px' : '12px',
+                    borderBottomLeftRadius: msg.direction === 'inbound' ? '2px' : '12px',
+                    cursor:
+                      msg.direction === 'outbound' && msg.isLocalFailure
+                        ? 'pointer'
+                        : 'default',
+                    opacity: msg.status === 'sending' ? 0.85 : 1
+                  }}
+                >
                   {msg.body}
                 </div>
                 <div style={{
                   fontSize: '9px',
-                  color: '#94A3B8',
+                  color: msg.isLocalFailure ? '#E57373' : '#94A3B8',
                   marginTop: '3px',
                   textAlign: msg.direction === 'outbound' ? 'right' : 'left'
                 }}>
                   {formatTime(msg.created_at)}
+                  {msg.direction === 'outbound' && msg.status === 'sending' && ' · Sending...'}
+                  {msg.direction === 'outbound' && msg.isLocalFailure && ' · Failed — tap to retry'}
+                  {msg.direction === 'outbound' && !msg.status && !msg.isLocalFailure && ' · Sent'}
                 </div>
               </div>
             </React.Fragment>
@@ -584,7 +654,7 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
         />
 
         <button
-          onClick={sendMessage}
+          onClick={() => sendMessage()}
           disabled={sending || !newMessage.trim()}
           style={{
             width: '36px', height: '36px', borderRadius: '50%',

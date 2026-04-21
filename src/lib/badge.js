@@ -1,13 +1,15 @@
 export async function setUnreadBadge(count) {
   try {
-    if (!('setAppBadge' in navigator) || !('clearAppBadge' in navigator)) return;
+    const unreadCount = Number(count || 0);
 
-    if (!count || count <= 0) {
-      await navigator.clearAppBadge();
+    if ('setAppBadge' in navigator && unreadCount > 0) {
+      await navigator.setAppBadge(unreadCount);
       return;
     }
 
-    await navigator.setAppBadge(count);
+    if ('clearAppBadge' in navigator) {
+      await navigator.clearAppBadge();
+    }
   } catch (err) {
     console.error('Badge update error:', err);
   }

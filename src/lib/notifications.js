@@ -3,33 +3,48 @@ import { supabase } from './supabase';
 export async function registerPushNotifications() {
   try {
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-      return null;
+      return { ok: false, reason: 'unsupported' };
     }
 
     const registration = await navigator.serviceWorker.register('/sw.js');
-    const permission = await Notification.requestPermission();
+
+    let permission = Notification.permission;
     if (permission !== 'granted') {
-      return null;
+      permission = await Notification.requestPermission();
     }
 
-    const subscription = await registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(process.env.REACT_APP_VAPID_PUBLIC_KEY)
-    });
+    if (permission !== 'granted') {
+      return { ok: false, reason: 'denied' };
+    }
 
-    // Save subscription to Supabase
+    let subscription = await registration.pushManager.getSubscription();
+
+    if (!subscription) {
+      subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(process.env.REACT_APP_VAPID_PUBLIC_KEY)
+      });
+    }
+
     const { data: { session } } = await supabase.auth.getSession();
-    if (session) {
-      await supabase.from('practitioners')
-        .update({ push_subscription: subscription })
-        .eq('id', session.user.id);
+    if (!session) {
+      return { ok: false, reason: 'no-session' };
     }
 
-    return subscription;
+    const { error } = await supabase
+      .from('practitioners')
+      .update({ push_subscription: subscription.toJSON() })
+      .eq('id', session.user.id);
 
+    if (error) {
+      console.error('Push subscription save error:', error);
+      return { ok: false, reason: 'save-failed' };
+    }
+
+    return { ok: true, subscription };
   } catch (err) {
     console.error('Push registration error:', err);
-    return null;
+    return { ok: false, reason: 'error', error: err.message };
   }
 }
 
