@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { supabase } from '../lib/supabase';
-
 import { VERCEL_URL } from '../lib/config';
+import { PROFESSIONS } from '../constants/professions';
 
 function Onboarding({ onComplete, userEmail }) {
   const [step, setStep] = useState(1);
@@ -17,6 +17,7 @@ function Onboarding({ onComplete, userEmail }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [otherProfession, setOtherProfession] = useState('');
+  const [otherProfessionAbbreviation, setOtherProfessionAbbreviation] = useState('');
 
   const totalSteps = 3;
 
@@ -49,6 +50,15 @@ function Onboarding({ onComplete, userEmail }) {
       setError('Please fill in all fields.');
       return;
     }
+
+    if (
+      professionType === 'OTHER' &&
+      (!otherProfession.trim() || !otherProfessionAbbreviation.trim())
+    ) {
+      setError('Please enter your profession and abbreviation.');
+      return;
+    }
+
     setError('');
     setSaving(true);
     try {
@@ -57,14 +67,22 @@ function Onboarding({ onComplete, userEmail }) {
         setError('Session expired. Please sign in again.');
         return;
       }
+      const finalProfessionType =
+        professionType === 'OTHER' ? otherProfession.trim() : professionType;
+
+      const finalProfessionAbbreviation =
+        professionType === 'OTHER'
+          ? otherProfessionAbbreviation.trim().toUpperCase()
+          : professionType;
+
       const { error } = await supabase.from('practitioners').upsert({
         user_email: session.user.email,
         therapist_name: therapistName,
         clinic_name: clinicName,
-        profession_type: professionType === 'Other' && otherProfession
-          ? `Other: ${otherProfession}`
-          : professionType
+        profession_type: finalProfessionType,
+        profession_abbreviation: finalProfessionAbbreviation
       }, { onConflict: 'user_email' });
+
       if (error) throw error;
       setStep(2);
     } catch (err) {
@@ -236,27 +254,33 @@ function Onboarding({ onComplete, userEmail }) {
               style={{ ...inputStyle, appearance: 'auto' }}
             >
               <option value="">Select your profession...</option>
-              <option value="Acupuncturist">Acupuncturist</option>
-              <option value="Midwife">Midwife</option>
-              <option value="Naturopath">Naturopathic Doctor (ND)</option>
-              <option value="Nurse Practitioner">Nurse Practitioner</option>
-              <option value="Occupational Therapist">Occupational Therapist</option>
-              <option value="Physiotherapist">Physiotherapist</option>
-              <option value="Psychologist">Psychologist</option>
-              <option value="RCC">Registered Clinical Counsellor (RCC)</option>
-              <option value="RMT">Registered Massage Therapist (RMT)</option>
-              <option value="Social Worker">Social Worker</option>
-              <option value="Other">Other Healthcare Professional</option>
+
+              {PROFESSIONS.map(p => (
+                <option key={p.value} value={p.value}>
+                  {p.label}
+                </option>
+              ))}
             </select>
 
-            {professionType === 'Other' && (
-              <input
-                type="text"
-                placeholder="Please specify your profession"
-                value={otherProfession}
-                onChange={e => setOtherProfession(e.target.value)}
-                style={inputStyle}
-              />
+            {professionType === 'OTHER' && (
+              <>
+                <input
+                  type="text"
+                  placeholder="Please specify your profession"
+                  value={otherProfession}
+                  onChange={e => setOtherProfession(e.target.value)}
+                  style={inputStyle}
+                />
+
+                <input
+                  type="text"
+                  placeholder="Abbreviation (e.g. ST)"
+                  value={otherProfessionAbbreviation}
+                  onChange={e => setOtherProfessionAbbreviation(e.target.value.toUpperCase())}
+                  style={inputStyle}
+                  maxLength={10}
+                />
+              </>
             )}
 
             {error && <p style={{ color: '#E57373', fontSize: '12px', marginBottom: '12px' }}>{error}</p>}

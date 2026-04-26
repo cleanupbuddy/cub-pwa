@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { setUnreadBadge } from '../lib/badge';
 
-function ContactsList({ onSelectContact, clinicNumber, onArchiveChange, viewingArchived, refreshTrigger }) {
+function ContactsList({ onSelectContact, clinicNumber, onArchiveChange, viewingArchived, refreshTrigger, currentUserId }) {
   const [contacts, setContacts] = useState([]);
   const [contactMap, setContactMap] = useState({});
   const [loading, setLoading] = useState(true);
@@ -10,57 +10,20 @@ function ContactsList({ onSelectContact, clinicNumber, onArchiveChange, viewingA
   const [showNewChat, setShowNewChat] = useState(false);
   const [newPhone, setNewPhone] = useState('');
 
-  const getActiveSession = async () => {
-    let session = null;
-
-    for (let i = 0; i < 3; i++) {
-      const { data, error } = await supabase.auth.getSession();
-      if (error) throw error;
-
-      session = data.session;
-      if (session) return session;
-
-      await new Promise(resolve => setTimeout(resolve, 300));
-    }
-
-    return null;
-  };
-
-  useEffect(() => {
-    const handleVisibilityChange = async () => {
-      if (document.visibilityState === 'visible') {
-        await loadContacts();
-      }
-    };
-
-    const handlePageShow = async () => {
-      await loadContacts();
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('pageshow', handlePageShow);
-
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('pageshow', handlePageShow);
-    };
-  }, [viewingArchived, clinicNumber]);
-
   useEffect(() => {
     let channel;
 
     const setupContactsSubscription = async () => {
-      loadContacts(viewingArchived);
+      if (!currentUserId || !clinicNumber) return;
 
-      const session = await getActiveSession();
-      if (!session) return;
+      await loadContacts(viewingArchived);
 
       channel = supabase.channel('contacts:messages')
         .on('postgres_changes', {
           event: '*',
           schema: 'public',
           table: 'messages',
-          filter: `practitioner_id=eq.${session.user.id}`
+          filter: `practitioner_id=eq.${currentUserId}`
         }, () => {
           loadContacts(viewingArchived);
         })
@@ -72,7 +35,7 @@ function ContactsList({ onSelectContact, clinicNumber, onArchiveChange, viewingA
     return () => {
       if (channel) supabase.removeChannel(channel);
     };
-  }, [viewingArchived, refreshTrigger]);
+  }, [viewingArchived, refreshTrigger, currentUserId, clinicNumber]);
 
   const loadContacts = async (archived = viewingArchived) => {
     setLoading(true);
@@ -83,8 +46,7 @@ function ContactsList({ onSelectContact, clinicNumber, onArchiveChange, viewingA
     }, 5000);
 
     try {
-      const session = await getActiveSession();
-      if (!session || !clinicNumber) {
+      if (!currentUserId || !clinicNumber) {
         setContacts([]);
         setContactMap({});
         return;
@@ -93,7 +55,7 @@ function ContactsList({ onSelectContact, clinicNumber, onArchiveChange, viewingA
       const { data: messages } = await supabase
         .from('messages')
         .select('from_number, to_number, direction, body, created_at, is_read, is_archived')
-        .eq('practitioner_id', session.user.id)
+        .eq('practitioner_id', currentUserId)
         .eq('is_archived', archived === true)
         .neq('status', 'draft')
         .order('created_at', { ascending: false });
@@ -101,7 +63,7 @@ function ContactsList({ onSelectContact, clinicNumber, onArchiveChange, viewingA
       const { data: contactsList } = await supabase
         .from('contacts')
         .select('phone_number, display_name, is_archived')
-        .eq('practitioner_id', session.user.id)
+        .eq('practitioner_id', currentUserId)
         .eq('is_archived', archived === true);
 
       const map = {};
@@ -183,32 +145,75 @@ function ContactsList({ onSelectContact, clinicNumber, onArchiveChange, viewingA
   const startNewChat = async () => {
     const cleaned = newPhone.replace(/\D/g, '');
     if (!cleaned) return;
+
     if (cleaned.length !== 10) {
       alert('Please enter a valid 10-digit phone number.');
       return;
     }
+
     const formatted = `+1${cleaned}`;
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        await supabase.from('contacts').upsert([{
-          practitioner_id: session.user.id,
-          phone_number: formatted,
-          display_name: null
-        }], { onConflict: 'practitioner_id,phone_number' });
+      if (!currentUserId) return;
+
+      // First check whether this contact already exists
+      const { data: existingContact, error: existingError } = await supabase
+        .from('contacts')
+        .select('id, is_archived, display_name')
+        .eq('practitioner_id', currentUserId)
+        .eq('phone_number', formatted)
+        .maybeSingle();
+
+      if (existingError) throw existingError;
+
+      if (existingContact) {
+        // If archived, restore it
+        if (existingContact.is_archived) {
+          const { error: restoreContactError } = await supabase
+            .from('contacts')
+            .update({ is_archived: false })
+            .eq('id', existingContact.id);
+
+          if (restoreContactError) throw restoreContactError;
+
+          await supabase
+            .from('messages')
+            .update({ is_archived: false })
+            .eq('practitioner_id', currentUserId)
+            .or(`from_number.eq.${formatted},to_number.eq.${formatted}`);
+        }
+
+        onSelectContact(formatted, existingContact.display_name || null, false);
+        setShowNewChat(false);
+        setNewPhone('');
+        await loadContacts(false);
+        return;
       }
+
+      // Otherwise create a brand new contact
+      const { error: insertError } = await supabase
+        .from('contacts')
+        .insert([{
+          practitioner_id: currentUserId,
+          phone_number: formatted,
+          display_name: null,
+          is_archived: false
+        }]);
+
+      if (insertError) throw insertError;
+
+      setContacts(prev => {
+        if (prev.find(c => c.phone === formatted)) return prev;
+        return [{ phone: formatted, latest: null, unreadCount: 0 }, ...prev];
+      });
+
+      onSelectContact(formatted, null, false);
+      setShowNewChat(false);
+      setNewPhone('');
     } catch (err) {
       console.error('New contact error:', err);
+      alert('Could not open this conversation. Please try again.');
     }
-
-    setContacts(prev => {
-      if (prev.find(c => c.phone === formatted)) return prev;
-      return [{ phone: formatted, latest: null, unreadCount: 0 }, ...prev];
-    });
-    onSelectContact(formatted, null);
-    setShowNewChat(false);
-    setNewPhone('');
   };
 
   const toggleArchived = () => {
@@ -221,11 +226,7 @@ function ContactsList({ onSelectContact, clinicNumber, onArchiveChange, viewingA
     return name.toLowerCase().includes(search.toLowerCase());
   });
 
-  if (loading) return (
-    <div style={{ padding: '40px 20px', textAlign: 'center', color: '#94A3B8', fontSize: '12px' }}>
-      Loading...
-    </div>
-  );
+  const showEmptyState = !loading && filtered.length === 0;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%', minWidth: 0 }}>
@@ -292,7 +293,7 @@ function ContactsList({ onSelectContact, clinicNumber, onArchiveChange, viewingA
 
       {/* Contacts */}
       <div style={{ flex: 1, overflowY: 'auto', background: '#fff' }}>
-        {filtered.length === 0 ? (
+        {showEmptyState ? (
           <div style={{ padding: '40px 20px', textAlign: 'center', color: '#94A3B8', fontSize: '12px' }}>
             {viewingArchived ? 'No archived conversations' : 'No active chats yet'}
           </div>

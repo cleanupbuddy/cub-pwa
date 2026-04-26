@@ -27,15 +27,26 @@ function VoiceCall({ contact, clinicNumber, practitionerNumber, therapistName, c
 
   const sendPreCallText = async () => {
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        console.error('No auth token — cannot send pre-call text');
+        return;
+      }
+
       await fetch(`${VERCEL_URL}/api/send-sms`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`
+        },
         body: JSON.stringify({
           to: contact.phone,
           from: clinicNumber,
           message: `Hi, this is ${therapistName} from ${clinicName}. I will be calling you from this number in a moment.`
         })
       });
+
       setNotifySent(true);
     } catch (err) {
       console.error('Pre-call text error:', err);
@@ -51,9 +62,20 @@ function VoiceCall({ contact, clinicNumber, practitionerNumber, therapistName, c
     setStatus('calling');
 
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        console.error('No auth token — cannot make call');
+        setStatus('error');
+        return;
+      }
+
       const response = await fetch(`${VERCEL_URL}/api/make-call`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`
+        },
         body: JSON.stringify({
           practitionerPhone: practitionerNumber,
           patientPhone: contact.phone,
@@ -65,8 +87,6 @@ function VoiceCall({ contact, clinicNumber, practitionerNumber, therapistName, c
       if (!data.success) throw new Error(data.error);
 
       setStatus('connected');
-
-      const { data: { session } } = await supabase.auth.getSession();
 
       if (session) {
         await supabase.from('messages').insert([{

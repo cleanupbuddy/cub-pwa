@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import VoiceCall from './VoiceCall';
-
+import { setUnreadBadge } from '../lib/badge';
 import { VERCEL_URL } from '../lib/config';
 
-function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practitionerNumber, isArchivedView, onArchived, onRead, onBack, refreshTrigger }) {
+function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practitionerNumber, isArchivedView, onArchived, onRead, onBack, refreshTrigger, currentUserId }) {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
@@ -15,29 +15,11 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
   const [archived, setArchived] = useState(false);
   const [archiveError, setArchiveError] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [currentPhone, setCurrentPhone] = useState(null);
 
   const isIPhone = /iPhone|iPod/.test(navigator.userAgent);
 
-  const getActiveSession = async () => {
-    let session = null;
-
-    for (let i = 0; i < 3; i++) {
-      const { data, error } = await supabase.auth.getSession();
-      if (error) throw error;
-
-      session = data.session;
-      if (session) return session;
-
-      await new Promise(resolve => setTimeout(resolve, 300));
-    }
-
-    return null;
-  };
-
   const loadMessages = async () => {
-    const session = await getActiveSession();
-    if (!session || !contact?.phone) {
+    if (!currentUserId || !contact?.phone) {
       setMessages([]);
       return;
     }
@@ -53,7 +35,7 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
       const { data } = await supabase
         .from('messages')
         .select('*')
-        .eq('practitioner_id', session.user.id)
+        .eq('practitioner_id', currentUserId)
         .or(`from_number.eq.${contact.phone},to_number.eq.${contact.phone}`)
         .neq('status', 'draft')
         .order('created_at', { ascending: true });
@@ -73,30 +55,22 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
     let cancelled = false;
 
     const setupChat = async () => {
-      const session = await getActiveSession();
-      if (!session || !contact?.phone || cancelled) return;
-
-      // Only clear when actually switching contacts
-      if (currentPhone !== contact.phone) {
-        setMessages([]);
-        setCurrentPhone(contact.phone);
-      }
+      if (!currentUserId || !contact?.phone || cancelled) return;
 
       await loadMessages();
       await markAsRead();
-      await loadMessages();
 
       if (cancelled) return;
 
       channel = supabase
-        .channel(`chat:${contact.phone}:${session.user.id}`)
+        .channel(`chat:${contact.phone}:${currentUserId}`)
         .on(
           'postgres_changes',
           {
             event: '*',
             schema: 'public',
             table: 'messages',
-            filter: `practitioner_id=eq.${session.user.id}`
+            filter: `practitioner_id=eq.${currentUserId}`
           },
           async (payload) => {
             const row = payload.new || payload.old;
@@ -112,46 +86,13 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
         )
         .subscribe();
     };
-
     setupChat();
 
     return () => {
       cancelled = true;
       if (channel) supabase.removeChannel(channel);
     };
-  }, [contact.phone, refreshTrigger]);
-
-  useEffect(() => {
-    const handleVisibilityChange = async () => {
-      if (document.visibilityState === 'visible') {
-        try {
-          await loadMessages();
-          await markAsRead();
-          await loadMessages();
-        } catch (err) {
-          console.error('Chat wake refresh error:', err);
-        }
-      }
-    };
-
-    const handlePageShow = async () => {
-      try {
-        await loadMessages();
-        await markAsRead();
-        await loadMessages();
-      } catch (err) {
-        console.error('Chat pageshow refresh error:', err);
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('pageshow', handlePageShow);
-
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('pageshow', handlePageShow);
-    };
-  }, [contact.phone]);
+  }, [contact.phone, refreshTrigger, currentUserId]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -159,32 +100,33 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
 
   const saveName = async () => {
     setEditingName(false);
+
     if (!contactName.trim()) return;
+
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-
-      const { data: existing } = await supabase
-        .from('contacts')
-        .select('id')
-        .eq('phone_number', contact.phone)
-        .eq('practitioner_id', session.user.id)
-        .maybeSingle();
-
-      if (existing) {
-        await supabase.from('contacts')
-          .update({ display_name: contactName })
-          .eq('id', existing.id);
-      } else {
-        await supabase.from('contacts')
-          .insert([{
-            phone_number: contact.phone,
-            display_name: contactName,
-            practitioner_id: session.user.id
-          }]);
+      if (!currentUserId) {
+        console.error('No active user while saving contact name');
+        return;
       }
+
+      const { error } = await supabase
+        .from('contacts')
+        .upsert([{
+          phone_number: contact.phone,
+          display_name: contactName.trim(),
+          practitioner_id: currentUserId
+        }], {
+          onConflict: 'practitioner_id,phone_number'
+        });
+
+      if (error) throw error;
+
+      console.log('✅ Contact name saved:', contactName);
+
+      if (onRead) onRead();
     } catch (err) {
       console.error('Save name error:', err);
+      alert('Could not save patient name. Please try again.');
     }
   };
 
@@ -192,16 +134,38 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
     setContactName(contact?.name || '');
   }, [contact?.phone, contact?.name]);
 
+  const refreshUnreadBadge = async () => {
+    if (!currentUserId) return;
+
+    try {
+      const { count, error } = await supabase
+        .from('messages')
+        .select('*', { count: 'exact', head: true })
+        .eq('practitioner_id', currentUserId)
+        .eq('direction', 'inbound')
+        .eq('is_read', false)
+        .eq('is_archived', false)
+        .neq('status', 'draft');
+
+      if (error) throw error;
+
+      await setUnreadBadge(count || 0);
+    } catch (err) {
+      console.error('Badge refresh error:', err);
+    }
+  };
+
   const markAsRead = async () => {
-    const session = await getActiveSession();
-    if (!session) return;
+    if (!currentUserId || !contact?.phone) return;
 
     await supabase
       .from('messages')
       .update({ is_read: true })
-      .eq('practitioner_id', session.user.id)
+      .eq('practitioner_id', currentUserId)
       .eq('from_number', contact.phone)
       .eq('is_read', false);
+
+    await refreshUnreadBadge();
 
     if (onRead) onRead();
   };
@@ -227,9 +191,19 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
     setNewMessage('');
 
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        console.error('No auth token — cannot send SMS');
+        return;
+      }
+
       const response = await fetch(`${VERCEL_URL}/api/send-sms`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session?.access_token}`
+        },
         body: JSON.stringify({
           to: contact.phone,
           from: clinicNumber,
@@ -345,6 +319,13 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
       setTimeout(() => setArchiveError(false), 3000);
     }
   };
+
+  const visibleMessages = messages.filter(
+    msg =>
+      msg.direction === 'system' ||
+      msg.from_number === contact.phone ||
+      msg.to_number === contact.phone
+  );
 
   return (
     <div style={{
@@ -478,7 +459,7 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
         flexDirection: 'column',
         WebkitOverflowScrolling: 'touch'
       }}>
-        {messages.map((msg, index) => {
+        {visibleMessages.map((msg, index) => {
 
           if (msg.direction === 'system') {
             return (
@@ -492,7 +473,7 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
               </div>
             );
           }
-          const prevMsg = messages[index - 1];
+          const prevMsg = visibleMessages[index - 1];
 
           const isNewDay =
             !prevMsg ||

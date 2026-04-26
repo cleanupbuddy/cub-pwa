@@ -28,7 +28,7 @@ function App() {
   };
 
   const resolveAppAccess = async (targetSession = null) => {
-    if (isResolving) return true;
+    if (isResolving) return false;
 
     setIsResolving(true);
 
@@ -64,7 +64,6 @@ function App() {
     } catch (err) {
       console.error('resolveAppAccess error:', err);
 
-      setStartupError('CUB Line had trouble restoring your session.');
       setLoading(false);
       setHasResolvedAccess(true);
 
@@ -202,7 +201,6 @@ function App() {
       }
     } catch (err) {
       console.error('Subscription check error:', err);
-      setStartupError('There was a problem loading your workspace.');
       setIsSubscribed(true);
       setHasResolvedAccess(true);
     }
@@ -311,21 +309,6 @@ function App() {
                   }}>
                     This is taking longer than expected — reconnecting...
                   </div>
-                  <button
-                    onClick={() => window.location.reload()}
-                    style={{
-                      background: '#588157',
-                      color: '#fff',
-                      border: 'none',
-                      borderRadius: '12px',
-                      padding: '10px 16px',
-                      fontSize: '13px',
-                      cursor: 'pointer',
-                      fontFamily: "'Outfit', sans-serif"
-                    }}
-                  >
-                    Reload app
-                  </button>
                 </div>
               </div>
             ) :

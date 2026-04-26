@@ -26,6 +26,7 @@ function Dashboard() {
   const [showReportIssue, setShowReportIssue] = useState(false);
   const [showInstallBanner, setShowInstallBanner] = useState(false);
   const [showShareFeedback, setShowShareFeedback] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState(null);
 
   useEffect(() => {
     loadProfile();
@@ -75,7 +76,13 @@ function Dashboard() {
   const loadProfile = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
+
+      if (!session) {
+        setCurrentUserId(null);
+        return;
+      }
+
+      setCurrentUserId(session.user.id);
 
       const { data: profile } = await supabase
         .from('practitioners')
@@ -173,12 +180,6 @@ function Dashboard() {
 
   const statusColor = status === 'active' ? '#9CAF88' : status === 'session' ? '#D6BD98' : '#64748B';
   const isIPhone = /iPhone|iPod/.test(navigator.userAgent);
-
-  if (loading) return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#F7F6F2' }}>
-      <div style={{ color: '#9CAF88', fontSize: '14px', fontFamily: 'sans-serif' }}>Loading...</div>
-    </div>
-  );
 
   return (
     <div style={{
@@ -284,7 +285,9 @@ function Dashboard() {
             <div>
               <div style={{ fontSize: '13px', fontWeight: '500', color: '#2F3E46' }}>
                 {profile?.therapist_name || 'CUB Practitioner'}
-                {profile?.profession_type ? ` · ${profile.profession_type}` : ''}
+                {(profile?.profession_abbreviation || profile?.profession_type)
+                  ? ` · ${profile.profession_abbreviation || profile.profession_type}`
+                  : ''}
               </div>
               <div style={{ fontSize: '10px', color: '#94A3B8' }}>
                 {profile?.clinic_name || 'Loading...'}
@@ -438,6 +441,7 @@ function Dashboard() {
           {selectedContact ? (
             <div style={{ flex: 1, width: '100%', minWidth: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
               <ChatWindow
+                key={selectedContact?.phone}
                 contact={selectedContact}
                 clinicNumber={profile?.clinic_number}
                 therapistName={profile?.therapist_name}
@@ -445,6 +449,7 @@ function Dashboard() {
                 practitionerNumber={profile?.practitioner_phone}
                 isArchivedView={selectedContact?.isArchived}
                 refreshTrigger={wakeRefresh}
+                currentUserId={currentUserId}
                 onArchived={() => setTimeout(() => setRefreshContacts(prev => prev + 1), 500)}
                 onRead={() => setRefreshContacts(prev => prev + 1)}
                 onBack={() => {
@@ -463,6 +468,7 @@ function Dashboard() {
                 onArchiveChange={setViewingArchived}
                 viewingArchived={viewingArchived}
                 refreshTrigger={refreshContacts}
+                currentUserId={currentUserId}
               />
             </div>
           )}
@@ -487,6 +493,7 @@ function Dashboard() {
               onArchiveChange={setViewingArchived}
               viewingArchived={viewingArchived}
               refreshTrigger={refreshContacts}
+              currentUserId={currentUserId}
             />
           </div>
 
@@ -500,6 +507,7 @@ function Dashboard() {
           }}>
             {selectedContact ? (
               <ChatWindow
+                key={selectedContact?.phone}
                 contact={selectedContact}
                 clinicNumber={profile?.clinic_number}
                 therapistName={profile?.therapist_name}
@@ -507,6 +515,7 @@ function Dashboard() {
                 practitionerNumber={profile?.practitioner_phone}
                 isArchivedView={selectedContact?.isArchived}
                 refreshTrigger={wakeRefresh}
+                currentUserId={currentUserId}
                 onArchived={() => setTimeout(() => setRefreshContacts(prev => prev + 1), 500)}
                 onRead={() => setRefreshContacts(prev => prev + 1)}
                 onBack={() => {

@@ -15,11 +15,11 @@ self.addEventListener('push', (event) => {
     try {
       const unreadCount = Number(data.unreadCount || 1);
 
-      if (self.registration.setAppBadge) {
+      if (self.navigator?.setAppBadge) {
         if (unreadCount > 0) {
-          await self.registration.setAppBadge(unreadCount);
-        } else if (self.registration.clearAppBadge) {
-          await self.registration.clearAppBadge();
+          await self.navigator.setAppBadge(unreadCount);
+        } else if (self.navigator?.clearAppBadge) {
+          await self.navigator.clearAppBadge();
         }
       }
     } catch (err) {
