@@ -36,10 +36,7 @@ function VoiceCall({ contact, clinicNumber, practitionerNumber, therapistName, c
 
       await fetch(`${VERCEL_URL}/api/send-sms`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session.access_token}`
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           to: contact.phone,
           from: clinicNumber,
@@ -72,10 +69,7 @@ function VoiceCall({ contact, clinicNumber, practitionerNumber, therapistName, c
 
       const response = await fetch(`${VERCEL_URL}/api/make-call`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session.access_token}`
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           practitionerPhone: practitionerNumber,
           patientPhone: contact.phone,

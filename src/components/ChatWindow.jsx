@@ -191,19 +191,9 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
     setNewMessage('');
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-
-      if (!session?.access_token) {
-        console.error('No auth token — cannot send SMS');
-        return;
-      }
-
       const response = await fetch(`${VERCEL_URL}/api/send-sms`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session?.access_token}`
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           to: contact.phone,
           from: clinicNumber,
