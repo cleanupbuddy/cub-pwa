@@ -17,11 +17,12 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const isIPhone = /iPhone|iPod/.test(navigator.userAgent);
+  const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-  const loadMessages = async () => {
+  const loadMessages = async (attempt = 1) => {
     if (!currentUserId || !contact?.phone) {
-      setMessages([]);
-      return;
+      console.warn('Messages load skipped: missing user or contact phone');
+      return [];
     }
 
     setIsRefreshing(true);
@@ -29,10 +30,10 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
     const fallbackTimeout = setTimeout(() => {
       console.warn('Messages load timed out');
       setIsRefreshing(false);
-    }, 5000);
+    }, 10000);
 
     try {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('messages')
         .select('*')
         .eq('practitioner_id', currentUserId)
@@ -40,10 +41,31 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
         .neq('status', 'draft')
         .order('created_at', { ascending: true });
 
-      if (data) setMessages(data);
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        console.log('✅ Messages loaded:', data.length, contact.phone);
+        setMessages(data);
+        return data;
+      }
+
+      if (attempt < 3) {
+        console.warn(`Messages empty on attempt ${attempt}, retrying...`);
+        await sleep(700 * attempt);
+        return loadMessages(attempt + 1);
+      }
+
+      console.warn('Messages still empty after retries:', contact.phone);
+      return [];
     } catch (err) {
       console.error('Load messages error:', err);
-      setMessages([]);
+
+      if (attempt < 3) {
+        await sleep(700 * attempt);
+        return loadMessages(attempt + 1);
+      }
+
+      return [];
     } finally {
       clearTimeout(fallbackTimeout);
       setIsRefreshing(false);
@@ -95,7 +117,7 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
   }, [contact.phone, refreshTrigger, currentUserId]);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    bottomRef.current?.scrollIntoView({ behavior: 'auto' });
   }, [messages]);
 
   const saveName = async () => {

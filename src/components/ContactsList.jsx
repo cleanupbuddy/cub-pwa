@@ -14,7 +14,10 @@ function ContactsList({ onSelectContact, clinicNumber, onArchiveChange, viewingA
     let channel;
 
     const setupContactsSubscription = async () => {
-      if (!currentUserId || !clinicNumber) return;
+      if (!currentUserId || !clinicNumber) {
+        console.warn('Contacts subscription skipped: missing user or clinic number');
+        return;
+      }
 
       await loadContacts(viewingArchived);
 
@@ -43,12 +46,11 @@ function ContactsList({ onSelectContact, clinicNumber, onArchiveChange, viewingA
     const fallbackTimeout = setTimeout(() => {
       console.warn('Contacts load timed out');
       setLoading(false);
-    }, 5000);
+    }, 10000);
 
     try {
       if (!currentUserId || !clinicNumber) {
-        setContacts([]);
-        setContactMap({});
+        console.warn('Contacts load skipped: missing user or clinic number');
         return;
       }
 
@@ -108,13 +110,33 @@ function ContactsList({ onSelectContact, clinicNumber, onArchiveChange, viewingA
         });
       }
 
-      setContacts(unique);
+      setContacts(prev => {
+        const prevMap = {};
+        prev.forEach(c => {
+          prevMap[c.phone] = c;
+        });
+
+        const merged = unique.map(c => {
+          const old = prevMap[c.phone];
+
+          return {
+            ...c,
+            latest: c.latest || old?.latest || null,
+            unreadCount: c.unreadCount ?? old?.unreadCount ?? 0
+          };
+        });
+
+        return merged.sort((a, b) => {
+          const aTime = a.latest?.created_at ? new Date(a.latest.created_at).getTime() : 0;
+          const bTime = b.latest?.created_at ? new Date(b.latest.created_at).getTime() : 0;
+          return bTime - aTime;
+        });
+      });
 
       const totalUnread = unique.reduce((sum, c) => sum + (c.unreadCount || 0), 0);
       await setUnreadBadge(totalUnread);
     } catch (err) {
       console.error('Load contacts error:', err);
-      setContacts([]);
     } finally {
       clearTimeout(fallbackTimeout);
       setLoading(false);

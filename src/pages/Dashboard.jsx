@@ -438,8 +438,40 @@ function Dashboard() {
         />
       ) : isIPhone ? (
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-          {selectedContact ? (
-            <div style={{ flex: 1, width: '100%', minWidth: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          {/* Keep ContactsList mounted so Back does not remount/refetch from scratch */}
+          <div
+            style={{
+              flex: 1,
+              width: '100%',
+              minWidth: '100%',
+              display: selectedContact ? 'none' : 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden'
+            }}
+          >
+            <ContactsList
+              onSelectContact={handleSelectContact}
+              clinicNumber={profile?.clinic_number}
+              selectedPhone={selectedContact?.phone}
+              onArchiveChange={setViewingArchived}
+              viewingArchived={viewingArchived}
+              refreshTrigger={refreshContacts}
+              currentUserId={currentUserId}
+            />
+          </div>
+
+          {/* ChatWindow appears over the preserved list state */}
+          {selectedContact && (
+            <div
+              style={{
+                flex: 1,
+                width: '100%',
+                minWidth: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                overflow: 'hidden'
+              }}
+            >
               <ChatWindow
                 key={selectedContact?.phone}
                 contact={selectedContact}
@@ -456,19 +488,6 @@ function Dashboard() {
                   setSelectedContact(null);
                   setTimeout(() => setViewingArchived(false), 300);
                 }}
-              />
-            </div>
-          ) : (
-            <div style={{ flex: 1, width: '100%', minWidth: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-              <ContactsList
-                key="contacts-list-mobile"
-                onSelectContact={handleSelectContact}
-                clinicNumber={profile?.clinic_number}
-                selectedPhone={selectedContact?.phone}
-                onArchiveChange={setViewingArchived}
-                viewingArchived={viewingArchived}
-                refreshTrigger={refreshContacts}
-                currentUserId={currentUserId}
               />
             </div>
           )}
