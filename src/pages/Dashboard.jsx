@@ -130,6 +130,7 @@ function Dashboard() {
     return () => document.removeEventListener('click', handleClickOutside);
   }, []);
 
+
   useEffect(() => {
     if (!currentUserId || hasAutoSelectedRef.current) return;
     hasAutoSelectedRef.current = true;

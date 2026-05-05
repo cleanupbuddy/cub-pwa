@@ -21,21 +21,28 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
 
   const loadMessages = async () => {
     if (!currentUserId || !contact?.phone) {
-      console.warn('Messages load skipped: missing user or contact phone');
       return [];
     }
 
     setIsRefreshing(true);
 
+    const withTimeout = (promise, ms) => Promise.race([
+      promise,
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Query timeout')), ms))
+    ]);
+
     for (let attempt = 1; attempt <= 3; attempt++) {
       try {
-        const { data, error } = await supabase
-          .from('messages')
-          .select('*')
-          .eq('practitioner_id', currentUserId)
-          .or(`from_number.eq.${contact.phone},to_number.eq.${contact.phone}`)
-          .neq('status', 'draft')
-          .order('created_at', { ascending: true });
+        const { data, error } = await withTimeout(
+          supabase
+            .from('messages')
+            .select('*')
+            .eq('practitioner_id', currentUserId)
+            .or(`from_number.eq.${contact.phone},to_number.eq.${contact.phone}`)
+            .neq('status', 'draft')
+            .order('created_at', { ascending: true }),
+          5000
+        );
 
         if (error) throw error;
 
@@ -47,7 +54,7 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
 
         console.warn(`Messages empty on attempt ${attempt}, retrying...`);
       } catch (err) {
-        console.error(`Load messages error on attempt ${attempt}:`, err);
+        console.error('Load messages error:', err);
       }
 
       if (attempt < 3) {
@@ -55,7 +62,6 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
       }
     }
 
-    console.warn('Messages still empty after retries:', contact.phone);
     return [];
   };
 
