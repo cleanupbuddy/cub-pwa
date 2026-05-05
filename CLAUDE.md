@@ -98,7 +98,7 @@ public/
 - Bootstrap timeout: **8 seconds**, then force-exits bootstrap
 - On catch: **silent retry once after 2 seconds** before showing the error screen
 - `!hasResolvedAccess` route fallback renders `null` (no "reconnecting" flash)
-- Wake handler removed — iOS cold-open handled entirely by the bootstrap path
+- **iOS wake handling:** `visibilitychange` listener calls `supabase.auth.refreshSession()` silently on wake — warms the Supabase HTTP connection before any queries run. iOS fully terminates the PWA on sleep; no in-memory state survives wake, so this fires on every foreground resume
 - Access flow: `session` → `checkSubscription` → subscribed? → onboarding needed? → Dashboard
 
 ### `Login.jsx`
@@ -114,7 +114,7 @@ public/
 
 ### `Dashboard.jsx`
 - Profile is seeded from `localStorage` (`cub_profile_cache`) as initial state to avoid flash on mount
-- `loadProfile()` re-fetches from Supabase and updates cache
+- `loadProfile(forceRefresh = false)` re-fetches from Supabase and updates cache — uses `getSession()` by default, `refreshSession()` when `forceRefresh = true`. Do not change the default to `refreshSession()` — it fails on cold launch before a session exists
 - Auto-selects last contact from `localStorage` (`cub_last_contact`) once `currentUserId` is set
 - Sign out clears both localStorage keys before calling `supabase.auth.signOut()`
 - Shows `WelcomeSurvey` once (`survey_completed` flag), `OnboardingTour` once (`tour_completed` flag)
@@ -137,6 +137,7 @@ public/
 
 Key behaviours:
 - `loadMessages` retries up to 3× with backoff — always filters by both `practitioner_id` and phone number
+- `loadMessages` wraps the Supabase query in a **5s `Promise.race` timeout** — post-wake the HTTP connection can hang indefinitely; the timeout surfaces it as an error so retries fire instead of silently blocking
 - `archiveConversation` and its undo button filter by **both** `practitioner_id` and phone number on both `messages` and `contacts` tables
 - Outbound SMS goes via `/api/send-sms` (bridge API), not directly through Twilio
 
