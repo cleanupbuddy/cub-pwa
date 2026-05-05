@@ -294,12 +294,14 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
       await supabase
         .from('messages')
         .update({ is_archived: archive })
+        .eq('practitioner_id', currentUserId)
         .or(`from_number.eq.${contact.phone},to_number.eq.${contact.phone}`);
 
       // Also update contacts table
       await supabase
         .from('contacts')
         .update({ is_archived: archive })
+        .eq('practitioner_id', currentUserId)
         .eq('phone_number', contact.phone);
       setArchived(true);
       setTimeout(() => {
@@ -682,10 +684,12 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
               await supabase
                 .from('messages')
                 .update({ is_archived: false })
+                .eq('practitioner_id', currentUserId)
                 .or(`from_number.eq.${contact.phone},to_number.eq.${contact.phone}`);
               await supabase
                 .from('contacts')
                 .update({ is_archived: false })
+                .eq('practitioner_id', currentUserId)
                 .eq('phone_number', contact.phone);
               setArchived(false);
               if (onArchived) onArchived();
