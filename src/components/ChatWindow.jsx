@@ -4,7 +4,7 @@ import VoiceCall from './VoiceCall';
 import { setUnreadBadge } from '../lib/badge';
 import { VERCEL_URL } from '../lib/config';
 
-function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practitionerNumber, isArchivedView, onArchived, onRead, onBack, refreshTrigger, currentUserId }) {
+function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practitionerNumber, isArchivedView, onArchived, onRead, onBack, currentUserId }) {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
@@ -19,7 +19,7 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
   const isIPhone = /iPhone|iPod/.test(navigator.userAgent);
   const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-  const loadMessages = async (attempt = 1) => {
+  const loadMessages = async () => {
     if (!currentUserId || !contact?.phone) {
       console.warn('Messages load skipped: missing user or contact phone');
       return [];
@@ -27,63 +27,44 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
 
     setIsRefreshing(true);
 
-    const fallbackTimeout = setTimeout(() => {
-      console.warn('Messages load timed out');
-      setIsRefreshing(false);
-    }, 10000);
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        const { data, error } = await supabase
+          .from('messages')
+          .select('*')
+          .eq('practitioner_id', currentUserId)
+          .or(`from_number.eq.${contact.phone},to_number.eq.${contact.phone}`)
+          .neq('status', 'draft')
+          .order('created_at', { ascending: true });
 
-    try {
-      const { data, error } = await supabase
-        .from('messages')
-        .select('*')
-        .eq('practitioner_id', currentUserId)
-        .or(`from_number.eq.${contact.phone},to_number.eq.${contact.phone}`)
-        .neq('status', 'draft')
-        .order('created_at', { ascending: true });
+        if (error) throw error;
 
-      if (error) throw error;
+        if (data && data.length > 0) {
+          console.log('✅ Messages loaded:', data.length, contact.phone);
+          setMessages(data);
+          return data;
+        }
 
-      if (data && data.length > 0) {
-        console.log('✅ Messages loaded:', data.length, contact.phone);
-        setMessages(data);
-        return data;
-      }
-
-      if (attempt < 3) {
         console.warn(`Messages empty on attempt ${attempt}, retrying...`);
-        await sleep(700 * attempt);
-        return loadMessages(attempt + 1);
+      } catch (err) {
+        console.error(`Load messages error on attempt ${attempt}:`, err);
       }
-
-      console.warn('Messages still empty after retries:', contact.phone);
-      return [];
-    } catch (err) {
-      console.error('Load messages error:', err);
 
       if (attempt < 3) {
         await sleep(700 * attempt);
-        return loadMessages(attempt + 1);
       }
-
-      return [];
-    } finally {
-      clearTimeout(fallbackTimeout);
-      setIsRefreshing(false);
     }
+
+    console.warn('Messages still empty after retries:', contact.phone);
+    return [];
   };
 
   useEffect(() => {
     let channel;
     let cancelled = false;
 
-    const setupChat = async () => {
-      if (!currentUserId || !contact?.phone || cancelled) return;
-
-      await loadMessages();
-      await markAsRead();
-
-      if (cancelled) return;
-
+    const subscribeToChannel = () => {
+      if (channel) supabase.removeChannel(channel);
       channel = supabase
         .channel(`chat:${contact.phone}:${currentUserId}`)
         .on(
@@ -97,24 +78,29 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
           async (payload) => {
             const row = payload.new || payload.old;
             if (!row || cancelled) return;
-
-            if (
-              row.from_number === contact.phone ||
-              row.to_number === contact.phone
-            ) {
+            if (row.from_number === contact.phone || row.to_number === contact.phone) {
               await loadMessages();
             }
           }
         )
         .subscribe();
     };
+
+    const setupChat = async () => {
+      if (!currentUserId || !contact?.phone || cancelled) return;
+      const data = await loadMessages();
+      if (cancelled) return;
+      await markAsRead();
+      subscribeToChannel();
+    };
+
     setupChat();
 
     return () => {
       cancelled = true;
       if (channel) supabase.removeChannel(channel);
     };
-  }, [contact.phone, refreshTrigger, currentUserId]);
+  }, [contact.phone, currentUserId]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'auto' });
@@ -227,7 +213,6 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
 
       try {
         result = await response.json();
-        console.log('SEND RESULT:', result);
       } catch (err) {
         const text = await response.text();
         console.error('Non-JSON response:', text);

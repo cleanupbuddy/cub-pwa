@@ -12,6 +12,7 @@ function ContactsList({ onSelectContact, clinicNumber, onArchiveChange, viewingA
 
   useEffect(() => {
     let channel;
+    let cancelled = false;
 
     const setupContactsSubscription = async () => {
       if (!currentUserId || !clinicNumber) {
@@ -21,7 +22,9 @@ function ContactsList({ onSelectContact, clinicNumber, onArchiveChange, viewingA
 
       await loadContacts(viewingArchived);
 
-      channel = supabase.channel('contacts:messages')
+      if (cancelled) return;
+
+      channel = supabase.channel(`contacts:messages:${currentUserId}`)
         .on('postgres_changes', {
           event: '*',
           schema: 'public',
@@ -36,6 +39,7 @@ function ContactsList({ onSelectContact, clinicNumber, onArchiveChange, viewingA
     setupContactsSubscription();
 
     return () => {
+      cancelled = true;
       if (channel) supabase.removeChannel(channel);
     };
   }, [viewingArchived, refreshTrigger, currentUserId, clinicNumber]);

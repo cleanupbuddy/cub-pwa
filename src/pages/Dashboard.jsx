@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import ContactsList from '../components/ContactsList';
 import ChatWindow from '../components/ChatWindow';
@@ -11,7 +11,12 @@ import ReportIssue from '../components/ReportIssue';
 import ShareFeedback from '../components/ShareFeedback';
 
 function Dashboard() {
-  const [profile, setProfile] = useState(null);
+  const [profile, setProfile] = useState(() => {
+    try {
+      const saved = localStorage.getItem('cub_profile_cache');
+      return saved ? JSON.parse(saved) : null;
+    } catch { return null; }
+  });
   const [loading, setLoading] = useState(true);
   const [selectedContact, setSelectedContact] = useState(null);
   const [status, setStatus] = useState('active');
@@ -20,13 +25,14 @@ function Dashboard() {
   const [showSurvey, setShowSurvey] = useState(false);
   const [viewingArchived, setViewingArchived] = useState(false);
   const [refreshContacts, setRefreshContacts] = useState(0);
-  const [wakeRefresh, setWakeRefresh] = useState(0);
   const [feedbackDay, setFeedbackDay] = useState(null);
   const [showTour, setShowTour] = useState(false);
   const [showReportIssue, setShowReportIssue] = useState(false);
   const [showInstallBanner, setShowInstallBanner] = useState(false);
   const [showShareFeedback, setShowShareFeedback] = useState(false);
   const [currentUserId, setCurrentUserId] = useState(null);
+
+  const hasAutoSelectedRef = useRef(false);
 
   useEffect(() => {
     loadProfile();
@@ -36,32 +42,6 @@ function Dashboard() {
       window.navigator.standalone === true;
 
     if (!isStandalone) setShowInstallBanner(true);
-
-    let lastHidden = null;
-
-    const handleVisibilityChange = async () => {
-      if (document.visibilityState === 'hidden') {
-        lastHidden = Date.now();
-        return;
-      }
-
-      if (document.visibilityState === 'visible') {
-        const timeAsleep = lastHidden ? Date.now() - lastHidden : 0;
-
-        if (timeAsleep > 60000) {
-          await loadProfile();
-        }
-
-        setRefreshContacts(prev => prev + 1);
-        setWakeRefresh(prev => prev + 1);
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
   }, []);
 
   const handleSwitchAccount = async () => {
@@ -73,9 +53,11 @@ function Dashboard() {
     }
   };
 
-  const loadProfile = async () => {
+  const loadProfile = async (forceRefresh = false) => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session } } = forceRefresh
+        ? await supabase.auth.refreshSession()
+        : await supabase.auth.getSession();
 
       if (!session) {
         setCurrentUserId(null);
@@ -91,6 +73,16 @@ function Dashboard() {
         .maybeSingle();
 
       setProfile(profile);
+      if (profile) {
+        try {
+          localStorage.setItem('cub_profile_cache', JSON.stringify({
+            therapist_name: profile.therapist_name,
+            clinic_name: profile.clinic_name,
+            profession_abbreviation: profile.profession_abbreviation,
+            profession_type: profile.profession_type,
+          }));
+        } catch {}
+      }
       if (profile?.current_status) setStatus(profile.current_status);
       if (profile?.clinic_number && !profile?.survey_completed) {
         setShowSurvey(true);
@@ -130,10 +122,25 @@ function Dashboard() {
   };
 
   useEffect(() => {
+  }, []);
+
+  useEffect(() => {
     const handleClickOutside = () => setShowStatusMenu(false);
     document.addEventListener('click', handleClickOutside);
     return () => document.removeEventListener('click', handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    if (!currentUserId || hasAutoSelectedRef.current) return;
+    hasAutoSelectedRef.current = true;
+    try {
+      const saved = localStorage.getItem('cub_last_contact');
+      if (saved) {
+        const { phone, name, isArchived } = JSON.parse(saved);
+        handleSelectContact(phone, name, isArchived ?? false);
+      }
+    } catch {}
+  }, [currentUserId]);
 
   const handleSurveyComplete = async () => {
     setShowSurvey(false);
@@ -151,6 +158,8 @@ function Dashboard() {
 
   const handleSignOut = async () => {
     try {
+      localStorage.removeItem('cub_last_contact');
+      localStorage.removeItem('cub_profile_cache');
       await supabase.auth.signOut();
       window.location.href = '/login';
     } catch (err) {
@@ -160,7 +169,9 @@ function Dashboard() {
   };
 
   const handleSelectContact = (phone, name, isArchived = false) => {
-    setSelectedContact({ phone, name, isArchived });
+    const contact = { phone, name, isArchived };
+    setSelectedContact(contact);
+    try { localStorage.setItem('cub_last_contact', JSON.stringify(contact)); } catch {}
   };
 
   const updateStatus = async (newStatus) => {
@@ -480,7 +491,6 @@ function Dashboard() {
                 clinicName={profile?.clinic_name}
                 practitionerNumber={profile?.practitioner_phone}
                 isArchivedView={selectedContact?.isArchived}
-                refreshTrigger={wakeRefresh}
                 currentUserId={currentUserId}
                 onArchived={() => setTimeout(() => setRefreshContacts(prev => prev + 1), 500)}
                 onRead={() => setRefreshContacts(prev => prev + 1)}
@@ -533,7 +543,6 @@ function Dashboard() {
                 clinicName={profile?.clinic_name}
                 practitionerNumber={profile?.practitioner_phone}
                 isArchivedView={selectedContact?.isArchived}
-                refreshTrigger={wakeRefresh}
                 currentUserId={currentUserId}
                 onArchived={() => setTimeout(() => setRefreshContacts(prev => prev + 1), 500)}
                 onRead={() => setRefreshContacts(prev => prev + 1)}

@@ -4,6 +4,18 @@ import ExportMessages from '../components/ExportMessages';
 import { registerPushNotifications } from '../lib/notifications';
 
 import { VERCEL_URL } from '../lib/config';
+import { PROFESSIONS } from '../constants/professions';
+
+const LONG_FORM_TO_CODE = {
+  'Acupuncturist': 'LAc',
+  'Midwife': 'MW',
+  'Naturopath': 'ND',
+  'Nurse Practitioner': 'NP',
+  'Occupational Therapist': 'OT',
+  'Physiotherapist': 'PT',
+  'Psychologist': 'RPsych',
+  'Social Worker': 'RSW',
+};
 
 function Settings({ onBack, profile, onProfileUpdate }) {
   const [isEditing, setIsEditing] = useState(false);
@@ -27,17 +39,29 @@ function Settings({ onBack, profile, onProfileUpdate }) {
   const [enableInSessionAuto, setEnableInSessionAuto] = useState(false);
   const [showExport, setShowExport] = useState(false);
   const [otherProfession, setOtherProfession] = useState('');
+  const [otherProfessionAbbreviation, setOtherProfessionAbbreviation] = useState('');
 
   useEffect(() => {
     if (profile) {
       setTherapistName(profile.therapist_name || '');
       setClinicName(profile.clinic_name || '');
       setPractitionerNumber(profile.practitioner_phone || '+1');
-      if (profile.profession_type?.startsWith('Other: ')) {
-        setProfessionType('Other');
-        setOtherProfession(profile.profession_type.replace('Other: ', ''));
+      const pt = profile.profession_type || '';
+      if (pt.startsWith('Other: ')) {
+        setProfessionType('OTHER');
+        setOtherProfession(pt.replace('Other: ', ''));
+        setOtherProfessionAbbreviation(profile.profession_abbreviation || '');
+      } else if (pt === 'Other') {
+        setProfessionType('OTHER');
+        setOtherProfessionAbbreviation(profile.profession_abbreviation || '');
+      } else if (LONG_FORM_TO_CODE[pt]) {
+        setProfessionType(LONG_FORM_TO_CODE[pt]);
+      } else if (pt && !PROFESSIONS.find(p => p.value === pt)) {
+        setProfessionType('OTHER');
+        setOtherProfession(pt);
+        setOtherProfessionAbbreviation(profile.profession_abbreviation || '');
       } else {
-        setProfessionType(profile.profession_type || '');
+        setProfessionType(pt);
       }
       setRegistrationNumber(profile.registration_number || '');
       setAutoReplyMsg(profile.auto_reply_msg || '');
@@ -110,13 +134,20 @@ function Settings({ onBack, profile, onProfileUpdate }) {
       }
       const formattedPhone = cleanedPhone.startsWith('1') ? `+${cleanedPhone}` : `+1${cleanedPhone}`;
 
+      const finalProfessionType = professionType === 'OTHER' && otherProfession.trim()
+        ? otherProfession.trim()
+        : professionType;
+
+      const finalProfessionAbbreviation = professionType === 'OTHER'
+        ? otherProfessionAbbreviation.trim().toUpperCase()
+        : professionType;
+
       await supabase.from('practitioners').update({
         therapist_name: therapistName,
         clinic_name: clinicName,
         practitioner_phone: formattedPhone,
-        profession_type: professionType === 'Other' && otherProfession
-          ? `Other: ${otherProfession}`
-          : professionType,
+        profession_type: finalProfessionType,
+        profession_abbreviation: finalProfessionAbbreviation,
         registration_number: registrationNumber,
         auto_reply_msg: autoReplyMsg,
         enable_auto: enableAutoReply,
@@ -250,26 +281,29 @@ function Settings({ onBack, profile, onProfileUpdate }) {
             style={{ ...inputStyle(isEditing), appearance: isEditing ? 'auto' : 'none' }}
           >
             <option value="">Select your profession...</option>
-            <option value="Acupuncturist">Acupuncturist</option>
-            <option value="Midwife">Midwife</option>
-            <option value="Naturopath">Naturopathic Doctor (ND)</option>
-            <option value="Nurse Practitioner">Nurse Practitioner</option>
-            <option value="Occupational Therapist">Occupational Therapist</option>
-            <option value="Physiotherapist">Physiotherapist</option>
-            <option value="Psychologist">Psychologist</option>
-            <option value="RCC">Registered Clinical Counsellor (RCC)</option>
-            <option value="RMT">Registered Massage Therapist (RMT)</option>
-            <option value="Social Worker">Social Worker</option>
-            <option value="Other">Other Healthcare Professional</option>
+            {PROFESSIONS.map(p => (
+              <option key={p.value} value={p.value}>{p.label}</option>
+            ))}
           </select>
 
-          {professionType === 'Other' && (
+          {professionType === 'OTHER' && (
             <input
               type="text"
               placeholder="Please specify your profession"
               value={otherProfession}
               onChange={e => setOtherProfession(e.target.value)}
               readOnly={!isEditing}
+              style={inputStyle(isEditing)}
+            />
+          )}
+          {professionType === 'OTHER' && (
+            <input
+              type="text"
+              placeholder="Abbreviation (e.g. ST)"
+              value={otherProfessionAbbreviation}
+              onChange={e => setOtherProfessionAbbreviation(e.target.value.toUpperCase())}
+              readOnly={!isEditing}
+              maxLength={10}
               style={inputStyle(isEditing)}
             />
           )}
