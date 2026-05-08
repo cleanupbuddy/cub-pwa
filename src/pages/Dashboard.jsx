@@ -157,15 +157,13 @@ function Dashboard() {
     }
   };
 
-  const handleSignOut = async () => {
-    try {
-      localStorage.removeItem('cub_last_contact');
-      localStorage.removeItem('cub_profile_cache');
-      await supabase.auth.signOut({ scope: 'global' });
-    } catch (err) {
-      console.error('Sign out error:', err);
-    }
-    window.location.href = '/login';
+  const handleSignOut = () => {
+    localStorage.removeItem('cub_last_contact');
+    localStorage.removeItem('cub_profile_cache');
+    Object.keys(localStorage).forEach(key => {
+      if (key.startsWith('sb-')) localStorage.removeItem(key);
+    });
+    window.location.reload();
   };
 
   const handleSelectContact = (phone, name, isArchived = false) => {
@@ -338,7 +336,7 @@ function Dashboard() {
               ].map(s => (
                 <div
                   key={s.value}
-                  onClick={() => updateStatus(s.value)}
+                  onClick={(e) => { e.stopPropagation(); updateStatus(s.value); }}
                   style={{
                     padding: '9px 12px', fontSize: '12px', color: '#2F3E46',
                     borderRadius: '8px', cursor: 'pointer', display: 'flex',
@@ -356,7 +354,8 @@ function Dashboard() {
               <div style={{ height: '0.5px', background: '#E2E8E1', margin: '4px 0' }} />
 
               <div
-                onClick={() => {
+                onClick={(e) => {
+                  e.stopPropagation();
                   setShowStatusMenu(false);
                   handleSwitchAccount();
                 }}
@@ -373,7 +372,7 @@ function Dashboard() {
               <div style={{ height: '0.5px', background: '#E2E8E1', margin: '4px 0' }} />
 
               <div
-                onClick={() => { setShowStatusMenu(false); setShowSettings(true); }}
+                onClick={(e) => { e.stopPropagation(); setShowStatusMenu(false); setShowSettings(true); }}
                 style={{
                   padding: '9px 12px', fontSize: '12px', color: '#2F3E46',
                   borderRadius: '8px', cursor: 'pointer'
@@ -387,7 +386,7 @@ function Dashboard() {
               <div style={{ height: '0.5px', background: '#E2E8E1', margin: '4px 0' }} />
 
               <div
-                onClick={() => { setShowStatusMenu(false); window.open('https://getcubsuite.com/#faq', '_blank'); }}
+                onClick={(e) => { e.stopPropagation(); setShowStatusMenu(false); window.open('https://getcubsuite.com/#faq', '_blank'); }}
                 style={{
                   padding: '9px 12px', fontSize: '12px', color: '#2F3E46',
                   borderRadius: '8px', cursor: 'pointer'
@@ -399,7 +398,7 @@ function Dashboard() {
               </div>
 
               <div
-                onClick={() => { setShowStatusMenu(false); setShowShareFeedback(true); }}
+                onClick={(e) => { e.stopPropagation(); setShowStatusMenu(false); setShowShareFeedback(true); }}
                 style={{
                   padding: '9px 12px', fontSize: '12px', color: '#2F3E46',
                   borderRadius: '8px', cursor: 'pointer'
@@ -411,7 +410,7 @@ function Dashboard() {
               </div>
 
               <div
-                onClick={() => { setShowStatusMenu(false); setShowReportIssue(true); }}
+                onClick={(e) => { e.stopPropagation(); setShowStatusMenu(false); setShowReportIssue(true); }}
                 style={{
                   padding: '9px 12px', fontSize: '12px', color: '#2F3E46',
                   borderRadius: '8px', cursor: 'pointer'
@@ -425,7 +424,7 @@ function Dashboard() {
               <div style={{ height: '0.5px', background: '#E2E8E1', margin: '4px 0' }} />
 
               <div
-                onClick={() => { setShowStatusMenu(false); handleSignOut(); }}
+                onClick={(e) => { e.stopPropagation(); setShowStatusMenu(false); handleSignOut(); }}
                 style={{
                   padding: '9px 12px', fontSize: '12px', color: '#94A3B8',
                   borderRadius: '8px', cursor: 'pointer'
