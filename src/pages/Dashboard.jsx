@@ -161,12 +161,11 @@ function Dashboard() {
     try {
       localStorage.removeItem('cub_last_contact');
       localStorage.removeItem('cub_profile_cache');
-      await supabase.auth.signOut();
-      window.location.href = '/login';
+      await supabase.auth.signOut({ scope: 'global' });
     } catch (err) {
       console.error('Sign out error:', err);
-      window.location.reload();
     }
+    window.location.href = '/login';
   };
 
   const handleSelectContact = (phone, name, isArchived = false) => {
@@ -191,7 +190,7 @@ function Dashboard() {
   };
 
   const statusColor = status === 'active' ? '#9CAF88' : status === 'session' ? '#D6BD98' : '#64748B';
-  const isIPhone = /iPhone|iPod/.test(navigator.userAgent);
+  const isMobile = /iPhone|iPod|Android.*Mobile/.test(navigator.userAgent);
 
   return (
     <div style={{
@@ -270,7 +269,7 @@ function Dashboard() {
       )}
 
       {/* Header */}
-      {!(isIPhone && selectedContact) && (
+      {!(isMobile && selectedContact) && (
         <div style={{
           background: '#fff',
           padding: '14px 16px',
@@ -448,7 +447,7 @@ function Dashboard() {
           profile={profile}
           onProfileUpdate={loadProfile}
         />
-      ) : isIPhone ? (
+      ) : isMobile ? (
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           {/* Keep ContactsList mounted so Back does not remount/refetch from scratch */}
           <div

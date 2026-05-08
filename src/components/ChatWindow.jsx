@@ -16,7 +16,7 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
   const [archiveError, setArchiveError] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const isIPhone = /iPhone|iPod/.test(navigator.userAgent);
+  const isMobile = /iPhone|iPod|Android.*Mobile/.test(navigator.userAgent);
   const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
   const loadMessages = async () => {
@@ -336,7 +336,7 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
     <div style={{
       display: 'flex',
       flexDirection: 'column',
-      height: isIPhone ? '100dvh' : '100%',
+      height: isMobile ? '100dvh' : '100%',
       width: '100%',
       minWidth: 0,
       position: 'relative',
@@ -612,14 +612,14 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
             e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
           }}
           onKeyDown={e => {
-            if (isIPhone) return;
+            if (isMobile) return;
 
             if (e.key === 'Enter' && !e.shiftKey) {
               e.preventDefault();
               sendMessage();
             }
           }}
-          enterKeyHint={isIPhone ? 'enter' : 'send'}
+          enterKeyHint={isMobile ? 'enter' : 'send'}
           placeholder="Message..."
           style={{
             flex: 1,
