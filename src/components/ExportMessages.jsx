@@ -44,6 +44,11 @@ function ExportMessages({ onClose, clinicNumber }) {
         }
       });
     }
+    unique.sort((a, b) => {
+      const nameA = (map[a] || a).toLowerCase();
+      const nameB = (map[b] || b).toLowerCase();
+      return nameA.localeCompare(nameB);
+    });
     setPatients(unique);
   };
 
