@@ -19,6 +19,11 @@ export async function registerPushNotifications() {
 
     let subscription = await registration.pushManager.getSubscription();
 
+    if (subscription && subscription.expirationTime && subscription.expirationTime < Date.now()) {
+      await subscription.unsubscribe();
+      subscription = null;
+    }
+
     if (!subscription) {
       subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
@@ -29,6 +34,19 @@ export async function registerPushNotifications() {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
       return { ok: false, reason: 'no-session' };
+    }
+
+    const { data: profile } = await supabase
+      .from('practitioners')
+      .select('push_subscription')
+      .eq('id', session.user.id)
+      .maybeSingle();
+
+    const storedEndpoint = profile?.push_subscription?.endpoint;
+    const currentEndpoint = subscription.toJSON().endpoint;
+
+    if (storedEndpoint === currentEndpoint) {
+      return { ok: true, subscription };
     }
 
     const { error } = await supabase
