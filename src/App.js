@@ -153,13 +153,38 @@ function App() {
   }, []);
 
   useEffect(() => {
+    let hiddenAt = null;
+
     const handleVisibility = () => {
-      if (document.visibilityState === 'visible') {
+      if (document.visibilityState === 'hidden') {
+        hiddenAt = Date.now();
+      } else if (document.visibilityState === 'visible') {
+        const elapsed = hiddenAt ? Date.now() - hiddenAt : 0;
+        // If backgrounded for more than 15 seconds, force a clean reload
+        // This is the most reliable fix for dead WebSocket connections on iOS
+        if (elapsed > 15000) {
+          window.location.reload();
+          return;
+        }
+        // For short backgrounds, just refresh the auth session
         supabase.auth.refreshSession().catch(() => {});
       }
     };
+
+    // pageshow catches iOS back-forward cache restores
+    const handlePageShow = (e) => {
+      if (e.persisted) {
+        window.location.reload();
+      }
+    };
+
     document.addEventListener('visibilitychange', handleVisibility);
-    return () => document.removeEventListener('visibilitychange', handleVisibility);
+    window.addEventListener('pageshow', handlePageShow);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibility);
+      window.removeEventListener('pageshow', handlePageShow);
+    };
   }, []);
 
   if (isBootstrapping) return (
