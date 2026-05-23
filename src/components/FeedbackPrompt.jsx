@@ -179,7 +179,7 @@ function FeedbackPrompt({ day, onComplete, onDismiss, userEmail }) {
             }}>
               {submitting ? 'Submitting...' : 'Submit →'}
             </button>
-            <button onClick={handleSubmit} style={{
+            <button onClick={onComplete} style={{
               width: '100%', marginTop: '8px', padding: '8px', background: 'none',
               border: 'none', fontSize: '11px', color: '#C5CAD2',
               cursor: 'pointer', fontFamily: "'Outfit', sans-serif"
@@ -393,7 +393,7 @@ function FeedbackPrompt({ day, onComplete, onDismiss, userEmail }) {
             }}>
               {submitting ? 'Submitting...' : 'Submit →'}
             </button>
-            <button onClick={handleSubmit} style={{
+            <button onClick={onComplete} style={{
               width: '100%', marginTop: '8px', padding: '8px', background: 'none',
               border: 'none', fontSize: '11px', color: '#C5CAD2',
               cursor: 'pointer', fontFamily: "'Outfit', sans-serif"

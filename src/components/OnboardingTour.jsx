@@ -9,11 +9,11 @@ const steps = [
         <div style={{ width: '48px', height: '48px', background: '#EAF3DE', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px' }}>
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#588157" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></svg>
         </div>
-        <h2 style={{ fontSize: '20px', fontWeight: '500', color: '#2F3E46', marginBottom: '12px' }}>Welcome to CUB.</h2>
+        <h2 style={{ fontSize: '20px', fontWeight: '500', color: '#2F3E46', marginBottom: '12px' }}>Welcome to CUB Line.</h2>
         <p style={{ fontSize: '13px', color: '#2F3E46', lineHeight: '1.7', marginBottom: '12px' }}>I built this because I got tired of patients having my personal number. As a solo practitioner, I wanted boundaries without barriers — a way to stay professional at work, and actually off when I'm off.</p>
-        <p style={{ fontSize: '13px', color: '#2F3E46', lineHeight: '1.7', marginBottom: '12px' }}>CUB gives you a dedicated clinic line without the second phone, the second bill, or the second life — private, encrypted, and built for BC practitioners.</p>
+        <p style={{ fontSize: '13px', color: '#2F3E46', lineHeight: '1.7', marginBottom: '12px' }}>CUB gives you a dedicated BC clinic line that lives right in your browser — no second phone, no second SIM, no second life. Private, encrypted, and built for practitioners who actually want to switch off.</p>
         <p style={{ fontSize: '13px', color: '#2F3E46', lineHeight: '1.7', marginBottom: '16px' }}>This guide will get you set up in minutes.</p>
-        <p style={{ fontSize: '12px', color: '#588157', fontWeight: '500' }}>— Jamie, Founder of CUB</p>
+        <p style={{ fontSize: '12px', color: '#588157', fontWeight: '500' }}>— Jamie, Founder of CUB Line</p>
       </div>
     )
   },
@@ -25,7 +25,7 @@ const steps = [
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#588157" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
         </div>
         <h2 style={{ fontSize: '18px', fontWeight: '500', color: '#2F3E46', marginBottom: '12px' }}>Your Profile</h2>
-        <p style={{ fontSize: '13px', color: '#2F3E46', lineHeight: '1.7', marginBottom: '16px' }}>Your name and clinic name appear in every message you send so patients always know who's reaching out.</p>
+        <p style={{ fontSize: '13px', color: '#2F3E46', lineHeight: '1.7', marginBottom: '16px' }}>Your name and clinic name help you stay organized inside CUB. When you reach out to a patient for the first time, introduce yourself so they save your clinic number — that's how they'll recognize you every time after.</p>
 
         {/* Hamburger UI preview */}
         <div style={{ marginBottom: '8px' }}>
@@ -80,7 +80,7 @@ const steps = [
 
         <div style={{ background: '#F8F9F7', borderRadius: '12px', padding: '14px 16px', border: '0.5px solid #E2E8E1' }}>
           <p style={{ fontSize: '11px', fontWeight: '600', color: '#588157', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '6px' }}>First impressions matter</p>
-          <p style={{ fontSize: '12px', color: '#64748B', lineHeight: '1.6', margin: 0 }}>When you text a patient for the first time, use the <strong style={{ color: '#2F3E46' }}>Intro</strong> quick action to introduce yourself and your clinic line. Patients who know it's coming are far more likely to save your number — and recognize you as the professional you are.</p>
+          <p style={{ fontSize: '12px', color: '#64748B', lineHeight: '1.6', margin: 0 }}>When you text a patient for the first time, tap the <strong style={{ color: '#2F3E46' }}>Intro</strong> chip in the message bar. It loads a ready-to-send introduction — personalize it or send it as-is. Patients who know the number is coming are far more likely to save it, and recognize your clinic line every time after.</p>
         </div>
       </div>
     )
@@ -96,7 +96,7 @@ const steps = [
         <p style={{ fontSize: '13px', color: '#2F3E46', lineHeight: '1.7', marginBottom: '16px' }}>Your CUB clinic number is a VoIP number — it works beautifully for professional communication, but there are a few things to be aware of.</p>
         <div style={{ background: '#FFF8F0', borderRadius: '12px', padding: '14px 16px', border: '0.5px solid #D6BD98', marginBottom: '12px' }}>
           <p style={{ fontSize: '11px', fontWeight: '600', color: '#A0845C', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '6px' }}>🚨 Never use for emergencies</p>
-          <p style={{ fontSize: '12px', color: '#64748B', lineHeight: '1.6', margin: 0 }}>Your CUB number is not intended for 911 or emergency calls. Attempting to call 911 through your clinic number may result in a $100 USD fee. Always use a traditional phone line for emergencies.</p>
+          <p style={{ fontSize: '12px', color: '#64748B', lineHeight: '1.6', margin: 0 }}>Your CUB number is not intended for 911 or emergency calls. Attempting to call 911 through your clinic number may result in a $150 CAD fee. Always use a traditional phone line for emergencies.</p>
         </div>
         <div style={{ background: '#F8F9F7', borderRadius: '12px', padding: '14px 16px', border: '0.5px solid #E2E8E1', marginBottom: '12px' }}>
           <p style={{ fontSize: '11px', fontWeight: '600', color: '#588157', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '6px' }}>Two-factor authentication</p>
@@ -195,7 +195,11 @@ const steps = [
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#588157" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
         </div>
         <h2 style={{ fontSize: '18px', fontWeight: '500', color: '#2F3E46', marginBottom: '12px' }}>Your Status</h2>
-        <p style={{ fontSize: '13px', color: '#2F3E46', lineHeight: '1.7', marginBottom: '16px' }}>Set your status from the menu in the top right. Your status is just for you — patients never see it.</p>
+        <p style={{ fontSize: '13px', color: '#2F3E46', lineHeight: '1.7', marginBottom: '16px' }}>Before you set your status, go to Settings and write your auto-reply message — that's what patients receive when you're Off Duty. Once it's set, switching status actually means something.</p>
+        <div style={{ background: '#F0F4EE', borderRadius: '12px', padding: '14px 16px', border: '0.5px solid #9CAF88', marginBottom: '16px' }}>
+          <p style={{ fontSize: '11px', fontWeight: '600', color: '#588157', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '6px' }}>Auto-reply when Off Duty</p>
+          <p style={{ fontSize: '12px', color: '#64748B', lineHeight: '1.6', margin: 0 }}>Set up an auto-reply message in <strong style={{ color: '#2F3E46' }}>Settings</strong> so patients automatically receive a warm response when you're Off Duty. You write the message — CUB sends it.</p>
+        </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
           {[
             { color: '#9CAF88', label: 'Active', desc: "You're available and accepting messages normally" },
@@ -210,10 +214,6 @@ const steps = [
               </div>
             </div>
           ))}
-        </div>
-        <div style={{ background: '#F0F4EE', borderRadius: '12px', padding: '14px 16px', border: '0.5px solid #9CAF88' }}>
-          <p style={{ fontSize: '11px', fontWeight: '600', color: '#588157', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '6px' }}>Auto-reply when Off Duty</p>
-          <p style={{ fontSize: '12px', color: '#64748B', lineHeight: '1.6', margin: 0 }}>Set up an auto-reply message in <strong style={{ color: '#2F3E46' }}>Settings</strong> so patients automatically receive a warm response when you're Off Duty. You write the message — CUB sends it.</p>
         </div>
       </div>
     )

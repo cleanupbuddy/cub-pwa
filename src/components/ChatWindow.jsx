@@ -86,6 +86,9 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
             if (!row || cancelled) return;
             if (row.from_number === contact.phone || row.to_number === contact.phone) {
               await loadMessages();
+              if (row.direction === 'inbound') {
+                await markAsRead();
+              }
             }
           }
         )

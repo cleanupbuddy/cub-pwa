@@ -7,8 +7,10 @@ function WelcomeSurvey({ onComplete }) {
     primaryDevice: '',
     professionType: '',
     hearAboutUs: '',
-    biggestChallenge: ''
+    biggestChallenge: '',
+    otherText: {}
   });
+  const [otherInput, setOtherInput] = useState('');
 
   const questions = [
     {
@@ -40,21 +42,34 @@ function WelcomeSurvey({ onComplete }) {
 
   const currentQuestion = questions[step];
 
-  const handleSelect = async (option) => {
+  const handleSelect = (option) => {
     const newAnswers = { ...answers, [currentQuestion.key]: option };
     setAnswers(newAnswers);
+    setOtherInput('');
+    if (option !== 'Other') {
+      advance(newAnswers);
+    }
+  };
 
+  const handleOtherSubmit = () => {
+    const value = otherInput.trim() ? `Other: ${otherInput.trim()}` : 'Other';
+    const newAnswers = { ...answers, [currentQuestion.key]: value };
+    setAnswers(newAnswers);
+    advance(newAnswers);
+  };
+
+  const advance = async (newAnswers) => {
     if (step < questions.length - 1) {
       setStep(step + 1);
     } else {
-      // Save to Supabase
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (session) {
           await supabase.from('practitioners').update({
             survey_primary_device: newAnswers.primaryDevice,
             survey_hear_about_us: newAnswers.hearAboutUs,
-            survey_biggest_challenge: newAnswers.biggestChallenge
+            survey_biggest_challenge: newAnswers.biggestChallenge,
+            survey_profession_type: newAnswers.professionType
           }).eq('user_email', session.user.email);
         }
       } catch (err) {
@@ -132,6 +147,39 @@ function WelcomeSurvey({ onComplete }) {
             </button>
           ))}
         </div>
+
+        {answers[currentQuestion.key] === 'Other' && (
+          <div style={{ marginTop: '12px' }}>
+            <input
+              type="text"
+              placeholder="Please describe..."
+              value={otherInput}
+              onChange={e => setOtherInput(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleOtherSubmit()}
+              autoFocus
+              style={{
+                width: '100%', padding: '14px 16px',
+                border: '0.5px solid #E2E8E1', borderRadius: '12px',
+                fontSize: '13px', color: '#2F3E46',
+                fontFamily: "'Outfit', sans-serif", outline: 'none',
+                boxSizing: 'border-box', marginBottom: '10px',
+                background: '#fff'
+              }}
+            />
+            <button
+              onClick={handleOtherSubmit}
+              style={{
+                width: '100%', padding: '14px 16px',
+                background: '#588157', border: 'none',
+                borderRadius: '12px', fontSize: '13px', color: '#fff',
+                cursor: 'pointer', fontFamily: "'Outfit', sans-serif",
+                textAlign: 'center', fontWeight: '500'
+              }}
+            >
+              Continue
+            </button>
+          </div>
+        )}
 
         {/* Skip */}
         <button
