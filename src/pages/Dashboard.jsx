@@ -93,9 +93,9 @@ function Dashboard() {
       }
 
       // Check feedback prompts
-      if (profile?.trial_start_date && profile?.clinic_number) {
+      if (profile?.trial_started_at && profile?.clinic_number) {
         const daysSinceStart = Math.floor(
-          (new Date() - new Date(profile.trial_start_date)) / (1000 * 60 * 60 * 24)
+          (new Date() - new Date(profile.trial_started_at)) / (1000 * 60 * 60 * 24)
         );
         if (daysSinceStart >= 3 && !profile?.feedback_day3_completed) {
           setFeedbackDay(3);
