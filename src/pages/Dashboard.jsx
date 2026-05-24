@@ -40,8 +40,10 @@ function Dashboard() {
     const isStandalone =
       window.matchMedia('(display-mode: standalone)').matches ||
       window.navigator.standalone === true;
+    const isMobileDevice = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    const bannerDismissed = localStorage.getItem('cub_install_banner_dismissed');
 
-    if (!isStandalone) setShowInstallBanner(true);
+    if (!isStandalone && isMobileDevice && !bannerDismissed) setShowInstallBanner(true);
   }, []);
 
   const handleSwitchAccount = async () => {
@@ -189,6 +191,7 @@ function Dashboard() {
 
   const statusColor = status === 'active' ? '#9CAF88' : status === 'session' ? '#D6BD98' : '#64748B';
   const isMobile = /iPhone|iPod|Android.*Mobile/.test(navigator.userAgent);
+  const isAndroid = /Android/i.test(navigator.userAgent);
 
   return (
     <div style={{
@@ -210,11 +213,16 @@ function Dashboard() {
           lineHeight: '1.5', flexShrink: 0
         }}>
           <span>
-            🌿 For the best experience —
-            <strong> Add CUB to your Home Screen</strong> via Safari Share → Add to Home Screen
+            {isAndroid
+              ? <>🌿 For the best experience — <strong>Add CUB to your Home Screen</strong> via Chrome menu (⋮) → Add to Home Screen</>
+              : <>🌿 For the best experience — <strong>Add CUB to your Home Screen</strong> via Safari Share → Add to Home Screen</>
+            }
           </span>
           <button
-            onClick={() => setShowInstallBanner(false)}
+            onClick={() => {
+              localStorage.setItem('cub_install_banner_dismissed', 'true');
+              setShowInstallBanner(false);
+            }}
             style={{
               background: 'none', border: 'none', color: '#9CAF88',
               fontSize: '16px', cursor: 'pointer', flexShrink: 0,
