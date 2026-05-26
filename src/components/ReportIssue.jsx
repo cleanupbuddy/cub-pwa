@@ -7,6 +7,8 @@ function ReportIssue({ onClose, userEmail }) {
   const [description, setDescription] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [screenshot, setScreenshot] = useState(null);
+  const [submitError, setSubmitError] = useState('');
 
   const issueTypes = [
     'Messages not sending or receiving',
@@ -19,6 +21,7 @@ function ReportIssue({ onClose, userEmail }) {
 
   const handleSubmit = async () => {
     if (!issueType) return;
+    setSubmitError('');
     setSubmitting(true);
     try {
       // Send to Sentry
@@ -38,20 +41,34 @@ function ReportIssue({ onClose, userEmail }) {
       // Save to Supabase
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        await supabase.from('issue_reports').insert([{
+        const { data: inserted } = await supabase.from('issue_reports').insert([{
           practitioner_id: session.user.id,
           user_email: userEmail,
           issue_type: issueType,
           description: description,
           user_agent: navigator.userAgent,
           created_at: new Date().toISOString()
-        }]);
+        }]).select().single();
+
+        if (screenshot && inserted) {
+          const path = `${session.user.id}/${Date.now()}_${screenshot.name}`;
+          const { error: uploadError } = await supabase.storage
+            .from('issue-screenshots')
+            .upload(path, screenshot);
+
+          if (!uploadError) {
+            await supabase.from('issue_reports')
+              .update({ screenshot_url: path })
+              .eq('id', inserted.id);
+          }
+        }
       }
 
       setSubmitted(true);
       setTimeout(() => onClose(), 2500);
     } catch (err) {
       console.error('Report error:', err);
+      setSubmitError('Something went wrong. Please try again.');
       setSubmitting(false);
     }
   };
@@ -137,6 +154,53 @@ function ReportIssue({ onClose, userEmail }) {
             boxSizing: 'border-box', marginTop: '4px', marginBottom: '16px'
           }}
         />
+
+        {/* Screenshot upload */}
+        <div style={{ marginBottom: '12px' }}>
+          <label style={{
+            display: 'flex', alignItems: 'center', gap: '8px',
+            padding: '12px 14px', border: '1px dashed #D1D8D0',
+            borderRadius: '10px', background: '#F8F9F7',
+            cursor: 'pointer', fontSize: '12px', color: '#64748B',
+            fontFamily: "'Outfit', sans-serif"
+          }}>
+            <span>📎</span>
+            <span>Attach a screenshot (optional)</span>
+            <input
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              style={{ display: 'none' }}
+              onChange={e => setScreenshot(e.target.files[0])}
+            />
+          </label>
+          {screenshot && (
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              marginTop: '8px', padding: '6px 10px',
+              background: '#F0F4EE', borderRadius: '8px',
+              fontSize: '11px', color: '#64748B'
+            }}>
+              <span>{screenshot.name}</span>
+              <button
+                onClick={() => setScreenshot(null)}
+                style={{
+                  background: 'none', border: 'none', color: '#94A3B8',
+                  cursor: 'pointer', fontSize: '14px', lineHeight: 1, padding: 0
+                }}
+              >✕</button>
+            </div>
+          )}
+        </div>
+
+        <p style={{ fontSize: '11px', color: '#94A3B8', lineHeight: '1.6', marginBottom: '16px' }}>
+          Screenshots are encrypted and stored securely. They're used only to resolve your issue and deleted once the ticket is closed. Please avoid including unnecessary patient information where possible.
+        </p>
+
+        {submitError && (
+          <p style={{ fontSize: '12px', color: '#E05C5C', marginBottom: '12px' }}>
+            {submitError}
+          </p>
+        )}
 
         {/* Buttons */}
         <button

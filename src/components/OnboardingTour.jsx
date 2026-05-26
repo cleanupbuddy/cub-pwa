@@ -67,6 +67,11 @@ const steps = [
         <p style={{ fontSize: '13px', color: '#2F3E46', lineHeight: '1.7', marginBottom: '16px' }}>This is the number your patients will text and call. It shows at the top of your inbox — and on every patient's caller ID when you reach out.</p>
 
         {/* UI preview */}
+        <div style={{ marginBottom: '8px' }}>
+          <span style={{ fontSize: '10px', color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+            Example:
+          </span>
+        </div>
         <div style={{ background: '#fff', borderRadius: '10px', padding: '10px 14px', border: '0.5px solid #E2E8E1', marginBottom: '16px' }}>
           <p style={{ fontSize: '10px', color: '#94A3B8', margin: 0, letterSpacing: '0.05em' }}>
             Your active line: +1 778 555 1234
