@@ -81,6 +81,7 @@ const steps = [
         <div style={{ background: '#F0F4EE', borderRadius: '12px', padding: '14px 16px', border: '0.5px solid #9CAF88', marginBottom: '12px' }}>
           <p style={{ fontSize: '11px', fontWeight: '600', color: '#588157', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '6px' }}>Save it in your personal phone</p>
           <p style={{ fontSize: '12px', color: '#64748B', lineHeight: '1.6', margin: 0 }}>Add your clinic number to your personal contacts with a name you'll recognize instantly — something like <strong style={{ color: '#2F3E46' }}>"CUB Clinic Line"</strong> or <strong style={{ color: '#2F3E46' }}>"Westside Wellness Line"</strong>. This way you'll always know when a patient is calling back on your clinic line.</p>
+          <p style={{ fontSize: '12px', color: '#64748B', lineHeight: '1.6', margin: 0, marginTop: '8px' }}>🚨 If you have Call Control enabled on your phone, save your clinic number in your contacts before making your first call — otherwise the bridge call may not connect.</p>
         </div>
 
         <div style={{ background: '#F8F9F7', borderRadius: '12px', padding: '14px 16px', border: '0.5px solid #E2E8E1' }}>
