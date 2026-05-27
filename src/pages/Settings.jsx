@@ -40,6 +40,7 @@ function Settings({ onBack, profile, onProfileUpdate }) {
   const [showExport, setShowExport] = useState(false);
   const [otherProfession, setOtherProfession] = useState('');
   const [otherProfessionAbbreviation, setOtherProfessionAbbreviation] = useState('');
+  const [notifMessage, setNotifMessage] = useState('');
 
   useEffect(() => {
     if (profile) {
@@ -561,41 +562,63 @@ You can book online anytime at [your booking link]"
         <div style={{ marginBottom: '24px', paddingTop: '16px', borderTop: '1px solid #F1F5F9' }}>
           <label style={labelStyle}>Notifications</label>
           <p style={{ fontSize: '11px', color: '#94A3B8', marginBottom: '12px', lineHeight: '1.6' }}>
-            Enable push notifications to get alerted when patients message you.
+            Get alerted when patients message you, even when the app isn't open.
           </p>
-
-          <button
-            onClick={async () => {
-              const result = await registerPushNotifications();
-              console.log('Push subscription result:', result);
-
-              if (result?.ok) {
-                alert('Notifications enabled on this device.');
-              } else if (result?.reason === 'denied') {
-                alert('Notifications were not allowed on this device.');
-              } else if (result?.reason === 'unsupported') {
-                alert('Push notifications are not supported here.');
-              } else {
-                alert('Could not enable notifications on this device.');
-              }
-            }}
-            style={{
-              width: '100%',
-              padding: '12px',
-              background: '#fff',
-              border: '0.5px solid #E2E8E1',
-              borderRadius: '12px',
-              fontSize: '11px',
-              fontWeight: '600',
-              color: '#2F3E46',
-              cursor: 'pointer',
-              fontFamily: "'Outfit', sans-serif",
-              textTransform: 'uppercase',
-              letterSpacing: '0.08em'
-            }}
-          >
-            Enable Notifications →
-          </button>
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            padding: '12px 14px', background: '#fff', border: '0.5px solid #E2E8E1',
+            borderRadius: '12px', marginBottom: '8px'
+          }}>
+            <span style={{ fontSize: '13px', color: '#2F3E46' }}>Push notifications</span>
+            <button
+              onClick={async () => {
+                const isCurrentlyEnabled = profile?.notifications_enabled;
+                if (!isCurrentlyEnabled) {
+                  const result = await registerPushNotifications();
+                  const { data: { session } } = await supabase.auth.getSession();
+                  if (!session) return;
+                  if (result.ok) {
+                    await supabase.from('practitioners')
+                      .update({ notifications_enabled: true })
+                      .eq('id', session.user.id);
+                    if (onProfileUpdate) onProfileUpdate();
+                    setNotifMessage('Notifications enabled on this device.');
+                  } else if (result.reason === 'denied') {
+                    setNotifMessage('Notifications blocked. Go to device Settings → Notifications to allow them.');
+                  } else if (result.reason === 'unsupported') {
+                    setNotifMessage("Push notifications aren't supported on this browser.");
+                  } else {
+                    setNotifMessage('Could not enable notifications. Try again.');
+                  }
+                } else {
+                  const { data: { session } } = await supabase.auth.getSession();
+                  if (!session) return;
+                  await supabase.from('practitioners')
+                    .update({ notifications_enabled: false })
+                    .eq('id', session.user.id);
+                  if (onProfileUpdate) onProfileUpdate();
+                  setNotifMessage('Notifications disabled.');
+                }
+              }}
+              style={{
+                width: '44px', height: '24px', borderRadius: '12px', border: 'none',
+                background: profile?.notifications_enabled ? '#588157' : '#D1D5DB',
+                cursor: 'pointer', position: 'relative', transition: 'background 0.2s', flexShrink: 0
+              }}
+            >
+              <div style={{
+                width: '18px', height: '18px', borderRadius: '50%', background: '#fff',
+                position: 'absolute', top: '3px',
+                left: profile?.notifications_enabled ? '23px' : '3px',
+                transition: 'left 0.2s'
+              }} />
+            </button>
+          </div>
+          {notifMessage && (
+            <p style={{ fontSize: '11px', color: '#64748B', lineHeight: '1.6', margin: '4px 0 0' }}>
+              {notifMessage}
+            </p>
+          )}
         </div>
 
         {/* Export */}

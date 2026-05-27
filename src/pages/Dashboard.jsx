@@ -4,7 +4,7 @@ import ContactsList from '../components/ContactsList';
 import ChatWindow from '../components/ChatWindow';
 import Settings from '../pages/Settings';
 import WelcomeSurvey from '../components/WelcomeSurvey';
-import { registerPushNotifications } from '../lib/notifications';
+import NotificationPrompt from '../components/NotificationPrompt';
 import FeedbackPrompt from '../components/FeedbackPrompt';
 import OnboardingTour from '../components/OnboardingTour';
 import ReportIssue from '../components/ReportIssue';
@@ -31,6 +31,7 @@ function Dashboard() {
   const [showInstallBanner, setShowInstallBanner] = useState(false);
   const [showShareFeedback, setShowShareFeedback] = useState(false);
   const [currentUserId, setCurrentUserId] = useState(null);
+  const [showNotificationPrompt, setShowNotificationPrompt] = useState(false);
 
   const hasAutoSelectedRef = useRef(false);
 
@@ -94,6 +95,10 @@ function Dashboard() {
         setShowTour(true);
       }
 
+      if (profile?.clinic_number && profile?.tour_completed && !profile?.notification_prompt_shown) {
+        setShowNotificationPrompt(true);
+      }
+
       // Check feedback prompts
       if (profile?.trial_started_at && profile?.clinic_number) {
         const daysSinceStart = Math.floor(
@@ -108,14 +113,7 @@ function Dashboard() {
         }
       }
 
-      // Register push notifications
-      if (profile?.clinic_number) {
-        registerPushNotifications().then(subscription => {
-          if (subscription) {
-            console.log('Push notifications enabled!');
-          }
-        });
-      }
+
     } catch (err) {
       console.error('Profile load error:', err);
     } finally {
@@ -246,6 +244,10 @@ function Dashboard() {
           userEmail={profile?.user_email}
           onComplete={() => setShowTour(false)}
         />
+      )}
+
+      {showNotificationPrompt && (
+        <NotificationPrompt onComplete={() => setShowNotificationPrompt(false)} />
       )}
 
       {feedbackDay && (
