@@ -87,6 +87,18 @@ function Dashboard() {
         } catch {}
       }
       if (profile?.current_status) setStatus(profile.current_status);
+
+      if (
+        profile?.days_off?.length > 0 &&
+        profile.days_off.includes(new Date().getDay()) &&
+        profile.current_status !== 'off'
+      ) {
+        setStatus('off');
+        await supabase.from('practitioners')
+          .update({ current_status: 'off' })
+          .eq('user_email', session.user.email);
+      }
+
       if (profile?.clinic_number && !profile?.survey_completed) {
         setShowSurvey(true);
       }
