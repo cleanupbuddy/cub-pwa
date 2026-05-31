@@ -18,7 +18,6 @@ const LONG_FORM_TO_CODE = {
 };
 
 function Settings({ onBack, profile, onProfileUpdate }) {
-  const [isEditing, setIsEditing] = useState(false);
   const [therapistName, setTherapistName] = useState('');
   const [clinicName, setClinicName] = useState('');
   const [practitionerNumber, setPractitionerNumber] = useState('+1');
@@ -27,7 +26,6 @@ function Settings({ onBack, profile, onProfileUpdate }) {
   const [autoReplyMsg, setAutoReplyMsg] = useState('');
   const [enableAutoReply, setEnableAutoReply] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [areaCode, setAreaCode] = useState('778');
   const [availableNumbers, setAvailableNumbers] = useState([]);
@@ -127,14 +125,6 @@ function Settings({ onBack, profile, onProfileUpdate }) {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
 
-      const cleanedPhone = practitionerNumber.replace(/\D/g, '');
-      const strippedLeading1 = cleanedPhone.startsWith('1') ? cleanedPhone.slice(1) : cleanedPhone;
-      if (strippedLeading1.length !== 10) {
-        setSaving(false);
-        return;
-      }
-      const formattedPhone = cleanedPhone.startsWith('1') ? `+${cleanedPhone}` : `+1${cleanedPhone}`;
-
       const finalProfessionType = professionType === 'OTHER' && otherProfession.trim()
         ? otherProfession.trim()
         : professionType;
@@ -146,7 +136,6 @@ function Settings({ onBack, profile, onProfileUpdate }) {
       await supabase.from('practitioners').update({
         therapist_name: therapistName,
         clinic_name: clinicName,
-        practitioner_phone: formattedPhone,
         profession_type: finalProfessionType,
         profession_abbreviation: finalProfessionAbbreviation,
         registration_number: registrationNumber,
@@ -157,13 +146,9 @@ function Settings({ onBack, profile, onProfileUpdate }) {
         enable_in_session_auto: enableInSessionAuto,
       }).eq('user_email', session.user.email);
 
-      setIsEditing(false);
-      setSaved(true);
       setShowToast(true);
       setTimeout(() => {
-        setSaved(false);
         setShowToast(false);
-        setIsEditing(false);
         if (onProfileUpdate) onProfileUpdate();
       }, 2000);
     } catch (err) {
@@ -190,29 +175,73 @@ function Settings({ onBack, profile, onProfileUpdate }) {
     }
   };
 
-  const inputStyle = (editable) => ({
+  const inputStyle = {
     width: '100%',
     marginTop: '4px',
     padding: '10px 12px',
     border: '1px solid #E2E8F0',
     borderRadius: '12px',
     fontSize: '16px',
-    backgroundColor: editable ? '#fff' : '#F1F5F9',
-    color: editable ? '#2F3E46' : '#94A3B8',
+    backgroundColor: '#fff',
+    color: '#2F3E46',
     boxSizing: 'border-box',
     fontFamily: "'Outfit', sans-serif",
-    cursor: editable ? 'text' : 'not-allowed',
-    outline: 'none'
-  });
+    cursor: 'text',
+    outline: 'none',
+  };
 
-  const labelStyle = {
-    fontSize: '10px',
-    color: '#64748b',
+
+  const cardStyle = {
+    background: '#fff',
+    borderRadius: '16px',
+    border: '0.5px solid rgba(47,62,70,0.08)',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+    overflow: 'hidden',
+    marginBottom: '16px',
+  };
+
+  const cardHeaderStyle = {
+    padding: '12px 16px',
+    borderBottom: '0.5px solid rgba(47,62,70,0.08)',
+    fontSize: '13px',
     fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: '0.5px',
+    color: '#2F3E46',
+  };
+
+  const cardBodyStyle = {
+    padding: '16px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '16px',
+  };
+
+  const fieldLabelStyle = {
     display: 'block',
-    marginBottom: '4px'
+    fontSize: '12px',
+    fontWeight: '500',
+    color: '#64748b',
+    marginBottom: '6px',
+  };
+
+  const lockedInputStyle = {
+    width: '100%',
+    padding: '10px 12px',
+    border: '1px solid #E2E8F0',
+    borderRadius: '12px',
+    fontSize: '16px',
+    backgroundColor: '#F1F5F9',
+    color: '#94A3B8',
+    boxSizing: 'border-box',
+    fontFamily: "'Outfit', sans-serif",
+    cursor: 'not-allowed',
+    outline: 'none',
+  };
+
+  const fieldNoteStyle = {
+    fontSize: '11px',
+    color: '#94A3B8',
+    marginTop: '6px',
+    lineHeight: '1.5',
   };
 
   return (
@@ -241,405 +270,404 @@ function Settings({ onBack, profile, onProfileUpdate }) {
           letterSpacing: '0.08em'
         }}>‹ Back</button>
         <div style={{ fontSize: '13px', fontWeight: '500', color: '#2F3E46' }}>Settings</div>
-        {isEditing ? (
-          <button
-            onClick={saveSettings}
-            disabled={saving}
-            style={{
-              background: 'none', border: 'none', color: '#588157',
-              fontSize: '11px', fontWeight: '600', cursor: saving ? 'not-allowed' : 'pointer',
-              fontFamily: "'Outfit', sans-serif", textTransform: 'uppercase',
-              letterSpacing: '0.08em'
-            }}
-          >
-            {saving ? 'Saving...' : saved ? 'Saved ✓' : 'Save'}
-          </button>
-        ) : (
-          <button
-            onClick={() => setIsEditing(true)}
-            style={{
-              background: 'none', border: 'none', color: '#588157',
-              fontSize: '11px', fontWeight: '600', cursor: 'pointer',
-              fontFamily: "'Outfit', sans-serif", textTransform: 'uppercase',
-              letterSpacing: '0.08em'
-            }}
-          >
-            Edit
-          </button>
-        )}
+        <div style={{ width: '44px' }} />
       </div>
 
       {/* Content */}
-      <div style={{ padding: '20px 16px', maxWidth: '600px', margin: '0 auto' }}>
+      <div style={{ padding: '20px 16px 96px', maxWidth: '600px', margin: '0 auto' }}>
 
-        {/* Profession */}
-        <div style={{ marginBottom: '16px' }}>
-          <label style={labelStyle}>Profession Type</label>
-          <select
-            value={professionType}
-            onChange={e => setProfessionType(e.target.value)}
-            disabled={!isEditing}
-            style={{ ...inputStyle(isEditing), appearance: isEditing ? 'auto' : 'none' }}
-          >
-            <option value="">Select your profession...</option>
-            {PROFESSIONS.map(p => (
-              <option key={p.value} value={p.value}>{p.label}</option>
-            ))}
-          </select>
+        {/* Card 1: Practice profile */}
+        <div style={cardStyle}>
+          <div style={cardHeaderStyle}>Practice profile</div>
+          <div style={cardBodyStyle}>
 
-          {professionType === 'OTHER' && (
-            <input
-              type="text"
-              placeholder="Please specify your profession"
-              value={otherProfession}
-              onChange={e => setOtherProfession(e.target.value)}
-              readOnly={!isEditing}
-              style={inputStyle(isEditing)}
-            />
-          )}
-          {professionType === 'OTHER' && (
-            <input
-              type="text"
-              placeholder="Abbreviation (e.g. ST)"
-              value={otherProfessionAbbreviation}
-              onChange={e => setOtherProfessionAbbreviation(e.target.value.toUpperCase())}
-              readOnly={!isEditing}
-              maxLength={10}
-              style={inputStyle(isEditing)}
-            />
-          )}
-        </div>
+            <div>
+              <label style={fieldLabelStyle}>Therapist name</label>
+              <input
+                type="text"
+                value={therapistName}
+                onChange={e => setTherapistName(e.target.value)}
+                placeholder="e.g. Jamie, RMT"
+                style={inputStyle}
+              />
+            </div>
 
-        {/* Registration number */}
-        <div style={{ marginBottom: '16px' }}>
-          <label style={labelStyle}>Registration Number</label>
-          <input
-            type="text"
-            value={registrationNumber}
-            onChange={e => setRegistrationNumber(e.target.value)}
-            readOnly={!isEditing}
-            placeholder="e.g. 12345"
-            style={inputStyle(isEditing)}
-          />
-        </div>
+            <div>
+              <label style={fieldLabelStyle}>Clinic name</label>
+              <input
+                type="text"
+                value={clinicName}
+                onChange={e => setClinicName(e.target.value)}
+                placeholder="e.g. Juniper Wellness"
+                style={inputStyle}
+              />
+            </div>
 
-        {/* Divider */}
-        <div style={{ height: '1px', background: '#F1F5F9', margin: '20px 0' }} />
-
-        {/* Therapist name */}
-        <div style={{ marginBottom: '16px' }}>
-          <label style={labelStyle}>Therapist Name</label>
-          <input
-            type="text"
-            value={therapistName}
-            onChange={e => setTherapistName(e.target.value)}
-            readOnly={!isEditing}
-            placeholder="e.g. Jamie, RMT"
-            style={inputStyle(isEditing)}
-          />
-        </div>
-
-        {/* Clinic name */}
-        <div style={{ marginBottom: '16px' }}>
-          <label style={labelStyle}>Clinic Name</label>
-          <input
-            type="text"
-            value={clinicName}
-            onChange={e => setClinicName(e.target.value)}
-            readOnly={!isEditing}
-            placeholder="e.g. Juniper Wellness"
-            style={inputStyle(isEditing)}
-          />
-        </div>
-
-        {/* Personal mobile */}
-        <div style={{ marginBottom: '16px' }}>
-          <label style={labelStyle}>Personal Mobile (for voice bridge)</label>
-          <input
-            type="text"
-            value={practitionerNumber}
-            onChange={e => setPractitionerNumber(e.target.value)}
-            readOnly={!isEditing}
-            placeholder="+1"
-            style={inputStyle(isEditing)}
-          />
-        </div>
-
-        {/* Clinic number */}
-        <div style={{ marginBottom: '16px' }}>
-          <label style={labelStyle}>CUB Clinic Number</label>
-          <input
-            type="text"
-            value={profile?.clinic_number || ''}
-            readOnly
-            style={inputStyle(false)}
-          />
-          {!profile?.clinic_number && (
-            <div style={{ marginTop: '12px' }}>
-              <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
-                <select
-                  value={areaCode}
-                  onChange={e => setAreaCode(e.target.value)}
-                  style={{ ...inputStyle(true), width: '140px', marginTop: 0 }}
-                >
-                  <option value="778">BC (778)</option>
-                  <option value="236">BC (236)</option>
-                  <option value="250">Interior (250)</option>
-                  <option value="604">Vancouver (604)</option>
-                </select>
-                <button
-                  onClick={searchNumbers}
-                  disabled={searching}
-                  style={{
-                    flex: 1, background: '#9CAF88', color: 'white',
-                    border: 'none', borderRadius: '12px', fontSize: '12px',
-                    fontWeight: '600', cursor: searching ? 'not-allowed' : 'pointer',
-                    fontFamily: "'Outfit', sans-serif"
-                  }}
-                >
-                  {searching ? 'Searching...' : 'Search BC'}
-                </button>
-              </div>
-              {availableNumbers.length > 0 && (
-                <select
-                  value={selectedNumber}
-                  onChange={e => setSelectedNumber(e.target.value)}
-                  style={{ ...inputStyle(true), marginTop: 0, marginBottom: '8px' }}
-                >
-                  <option value="">Select a number...</option>
-                  {availableNumbers.map(n => (
-                    <option key={n.phoneNumber} value={n.phoneNumber}>{n.friendlyName}</option>
-                  ))}
-                </select>
+            <div>
+              <label style={fieldLabelStyle}>Profession type</label>
+              <select
+                value={professionType}
+                onChange={e => setProfessionType(e.target.value)}
+                style={{ ...inputStyle, appearance: 'auto' }}
+              >
+                <option value="">Select your profession...</option>
+                {PROFESSIONS.map(p => (
+                  <option key={p.value} value={p.value}>{p.label}</option>
+                ))}
+              </select>
+              {professionType === 'OTHER' && (
+                <input
+                  type="text"
+                  placeholder="Please specify your profession"
+                  value={otherProfession}
+                  onChange={e => setOtherProfession(e.target.value)}
+                  style={{ ...inputStyle, marginTop: '8px' }}
+                />
               )}
-              {selectedNumber && (
-                <button
-                  onClick={claimNumber}
-                  disabled={claiming}
-                  style={{
-                    width: '100%', background: '#588157', color: 'white',
-                    border: 'none', borderRadius: '12px', padding: '10px',
-                    fontSize: '12px', fontWeight: '600',
-                    cursor: claiming ? 'not-allowed' : 'pointer',
-                    fontFamily: "'Outfit', sans-serif"
-                  }}
-                >
-                  {claiming ? 'Claiming...' : 'Claim This Number'}
-                </button>
+              {professionType === 'OTHER' && (
+                <input
+                  type="text"
+                  placeholder="Abbreviation (e.g. ST)"
+                  value={otherProfessionAbbreviation}
+                  onChange={e => setOtherProfessionAbbreviation(e.target.value.toUpperCase())}
+                  maxLength={10}
+                  style={{ ...inputStyle, marginTop: '8px' }}
+                />
               )}
             </div>
-          )}
-        </div>
 
-        {/* Days off */}
-        <div style={{ marginBottom: '24px', paddingTop: '16px', borderTop: '1px solid #F1F5F9' }}>
-          <label style={labelStyle}>Days Off</label>
-          <p style={{ fontSize: '11px', color: '#94A3B8', marginBottom: '12px', lineHeight: '1.6' }}>
-            CUB will automatically set you to Off Duty on these days.
-          </p>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-            {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map((day, i) => (
-              <label key={i} style={{
-                display: 'flex', alignItems: 'center', gap: '8px',
-                fontSize: '12px', color: '#2F3E46',
-                cursor: isEditing ? 'pointer' : 'not-allowed',
-                padding: '8px 12px', background: '#F7F6F2',
-                borderRadius: '10px', border: '0.5px solid #E2E8E1'
-              }}>
-                <input
-                  type="checkbox"
-                  checked={daysOff.includes(i)}
-                  onChange={e => {
-                    if (!isEditing) return;
-                    if (e.target.checked) {
-                      setDaysOff([...daysOff, i]);
-                    } else {
-                      setDaysOff(daysOff.filter(d => d !== i));
-                    }
-                  }}
-                  disabled={!isEditing}
-                  style={{ accentColor: '#588157' }}
-                />
-                {day}
-              </label>
-            ))}
+            <div>
+              <label style={fieldLabelStyle}>Registration number</label>
+              <input
+                type="text"
+                value={registrationNumber}
+                onChange={e => setRegistrationNumber(e.target.value)}
+                placeholder="e.g. 12345"
+                style={inputStyle}
+              />
+              <p style={fieldNoteStyle}>Helps us verify you're a registered practitioner. Never visible to patients.</p>
+            </div>
+
           </div>
         </div>
 
-        {/* In Session Auto Reply */}
-        <div style={{ marginBottom: '24px' }}>
-          <label style={labelStyle}>In Session Auto-Reply</label>
-          <p style={{ fontSize: '11px', color: '#94A3B8', marginBottom: '12px', lineHeight: '1.6' }}>
-            Automatically sent to patients when you're In Session.
-          </p>
-          <label style={{
-            display: 'flex', alignItems: 'center', gap: '10px',
-            marginBottom: '12px', cursor: isEditing ? 'pointer' : 'not-allowed'
-          }}>
-            <input
-              type="checkbox"
-              checked={enableInSessionAuto}
-              onChange={e => setEnableInSessionAuto(e.target.checked)}
-              disabled={!isEditing}
-              style={{ width: '16px', height: '16px', accentColor: '#588157' }}
+        {/* Card 2: Phone & number */}
+        <div style={cardStyle}>
+          <div style={cardHeaderStyle}>Phone & number</div>
+          <div style={cardBodyStyle}>
+
+            <div>
+              <label style={fieldLabelStyle}>Personal mobile</label>
+              <input
+                type="text"
+                value={practitionerNumber}
+                readOnly
+                style={lockedInputStyle}
+              />
+              <p style={fieldNoteStyle}>Contact support to update your mobile number.</p>
+            </div>
+
+            <div>
+              <label style={fieldLabelStyle}>CUB clinic number</label>
+              <input
+                type="text"
+                value={profile?.clinic_number || ''}
+                readOnly
+                style={lockedInputStyle}
+              />
+              <p style={fieldNoteStyle}>Your clinic number is permanent. Contact support if you need assistance.</p>
+              {!profile?.clinic_number && (
+                <div style={{ marginTop: '12px' }}>
+                  <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+                    <select
+                      value={areaCode}
+                      onChange={e => setAreaCode(e.target.value)}
+                      style={{ ...inputStyle, width: '140px', marginTop: 0 }}
+                    >
+                      <option value="778">BC (778)</option>
+                      <option value="236">BC (236)</option>
+                      <option value="250">Interior (250)</option>
+                      <option value="604">Vancouver (604)</option>
+                    </select>
+                    <button
+                      onClick={searchNumbers}
+                      disabled={searching}
+                      style={{
+                        flex: 1, background: '#9CAF88', color: 'white',
+                        border: 'none', borderRadius: '12px', fontSize: '12px',
+                        fontWeight: '600', cursor: searching ? 'not-allowed' : 'pointer',
+                        fontFamily: "'Outfit', sans-serif"
+                      }}
+                    >
+                      {searching ? 'Searching...' : 'Search BC'}
+                    </button>
+                  </div>
+                  {availableNumbers.length > 0 && (
+                    <select
+                      value={selectedNumber}
+                      onChange={e => setSelectedNumber(e.target.value)}
+                      style={{ ...inputStyle, marginTop: 0, marginBottom: '8px' }}
+                    >
+                      <option value="">Select a number...</option>
+                      {availableNumbers.map(n => (
+                        <option key={n.phoneNumber} value={n.phoneNumber}>{n.friendlyName}</option>
+                      ))}
+                    </select>
+                  )}
+                  {selectedNumber && (
+                    <button
+                      onClick={claimNumber}
+                      disabled={claiming}
+                      style={{
+                        width: '100%', background: '#588157', color: 'white',
+                        border: 'none', borderRadius: '12px', padding: '10px',
+                        fontSize: '12px', fontWeight: '600',
+                        cursor: claiming ? 'not-allowed' : 'pointer',
+                        fontFamily: "'Outfit', sans-serif"
+                      }}
+                    >
+                      {claiming ? 'Claiming...' : 'Claim This Number'}
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+
+          </div>
+        </div>
+
+        {/* Card 3: Days off */}
+        <div style={cardStyle}>
+          <div style={cardHeaderStyle}>Days off</div>
+          <div style={cardBodyStyle}>
+            <p style={fieldNoteStyle}>
+              CUB will automatically set you to Off Duty on these days.
+            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+              {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map((day, i) => (
+                <label key={i} style={{
+                  display: 'flex', alignItems: 'center', gap: '8px',
+                  fontSize: '12px', color: '#2F3E46',
+                  cursor: 'pointer',
+                  padding: '8px 12px', background: '#F7F6F2',
+                  borderRadius: '10px', border: '0.5px solid #E2E8E1'
+                }}>
+                  <input
+                    type="checkbox"
+                    checked={daysOff.includes(i)}
+                    onChange={e => {
+                      if (e.target.checked) {
+                        setDaysOff([...daysOff, i]);
+                      } else {
+                        setDaysOff(daysOff.filter(d => d !== i));
+                      }
+                    }}
+                    style={{ accentColor: '#588157' }}
+                  />
+                  {day}
+                </label>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Card 4: In Session Auto-Reply */}
+        <div style={cardStyle}>
+          <div style={cardHeaderStyle}>In Session auto-reply</div>
+          <div style={cardBodyStyle}>
+            <p style={fieldNoteStyle}>
+              Automatically sent to patients when you're In Session.
+            </p>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={enableInSessionAuto}
+                onChange={e => setEnableInSessionAuto(e.target.checked)}
+                style={{ width: '16px', height: '16px', accentColor: '#588157' }}
+              />
+              <span style={{ fontSize: '12px', color: '#2F3E46' }}>Enable auto-reply when In Session</span>
+            </label>
+            <textarea
+              value={inSessionMsg}
+              onChange={e => setInSessionMsg(e.target.value)}
+              placeholder={"e.g. Hi! I'm with a patient right now.\nFeel free to book your next appointment online: [your booking link]"}
+              style={{ ...inputStyle, resize: 'none', height: '80px' }}
             />
-            <span style={{ fontSize: '12px', color: '#2F3E46' }}>Enable auto-reply when In Session</span>
-          </label>
-          <textarea
-            value={inSessionMsg}
-            onChange={e => setInSessionMsg(e.target.value)}
-            readOnly={!isEditing}
-            placeholder="e.g. Hi! I'm with a patient right now. 
-Feel free to book your next appointment online: [your booking link]"
-            style={{
-              ...inputStyle(isEditing),
-              resize: 'none',
-              height: '80px'
-            }}
-          />
-          <p style={{ fontSize: '10px', color: '#9CAF88', marginTop: '6px', marginBottom: '0', lineHeight: '1.6' }}>
-            💡 Tip: Include your booking link so patients can self-book while you're away.
-          </p>
+            <p style={{ fontSize: '10px', color: '#9CAF88', margin: '0', lineHeight: '1.6' }}>
+              💡 Tip: Include your booking link so patients can self-book while you're away.
+            </p>
+          </div>
         </div>
 
-        {/* Off Duty Auto Reply */}
-        <div style={{ marginBottom: '24px' }}>
-          <label style={labelStyle}>Off Duty Auto-Reply</label>
-          <p style={{ fontSize: '11px', color: '#94A3B8', marginBottom: '12px', lineHeight: '1.6' }}>
-            Automatically sent to patients when you're Off Duty.
-          </p>
-          <label style={{
-            display: 'flex', alignItems: 'center', gap: '10px',
-            marginBottom: '12px', cursor: isEditing ? 'pointer' : 'not-allowed'
-          }}>
-            <input
-              type="checkbox"
-              checked={enableAutoReply}
-              onChange={e => setEnableAutoReply(e.target.checked)}
-              disabled={!isEditing}
-              style={{ width: '16px', height: '16px', accentColor: '#588157' }}
+        {/* Card 5: Off Duty Auto-Reply */}
+        <div style={cardStyle}>
+          <div style={cardHeaderStyle}>Off Duty auto-reply</div>
+          <div style={cardBodyStyle}>
+            <p style={fieldNoteStyle}>
+              Automatically sent to patients when you're Off Duty.
+            </p>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={enableAutoReply}
+                onChange={e => setEnableAutoReply(e.target.checked)}
+                style={{ width: '16px', height: '16px', accentColor: '#588157' }}
+              />
+              <span style={{ fontSize: '12px', color: '#2F3E46' }}>Enable auto-reply when Off Duty</span>
+            </label>
+            <textarea
+              value={autoReplyMsg}
+              onChange={e => setAutoReplyMsg(e.target.value)}
+              placeholder={"e.g. Hi! I'm currently off duty and will be back on Monday.\nYou can book online anytime at [your booking link]"}
+              style={{ ...inputStyle, resize: 'none', height: '80px' }}
             />
-            <span style={{ fontSize: '12px', color: '#2F3E46' }}>Enable auto-reply when Off Duty</span>
-          </label>
-          <textarea
-            value={autoReplyMsg}
-            onChange={e => setAutoReplyMsg(e.target.value)}
-            readOnly={!isEditing}
-            placeholder="e.g. Hi! I'm currently off duty and will be back on Monday. 
-You can book online anytime at [your booking link]"
-            style={{
-              ...inputStyle(isEditing),
-              resize: 'none',
-              height: '80px'
-            }}
-          />
-          <p style={{ fontSize: '10px', color: '#9CAF88', marginTop: '6px', marginBottom: '0', lineHeight: '1.6' }}>
-            💡 Tip: Include your booking link so patients can self-book while you're away.
-          </p>
+            <p style={{ fontSize: '10px', color: '#9CAF88', margin: '0', lineHeight: '1.6' }}>
+              💡 Tip: Include your booking link so patients can self-book while you're away.
+            </p>
+          </div>
         </div>
 
-        {/* Billing */}
-        <div style={{ marginBottom: '24px', paddingTop: '16px', borderTop: '1px solid #F1F5F9' }}>
-          <label style={labelStyle}>Subscription</label>
-          <p style={{ fontSize: '11px', color: '#94A3B8', marginBottom: '12px', lineHeight: '1.6' }}>
-            Manage your plan, update payment details or cancel anytime.
-          </p>
-          <button
-            onClick={openBillingPortal}
-            style={{
-              width: '100%', padding: '12px', background: '#fff',
-              border: '0.5px solid #E2E8E1', borderRadius: '12px',
-              fontSize: '11px', fontWeight: '600', color: '#2F3E46',
-              cursor: 'pointer', fontFamily: "'Outfit', sans-serif",
-              textTransform: 'uppercase', letterSpacing: '0.08em'
-            }}
-          >
-            Manage Billing →
-          </button>
-        </div>
-
-        {/* Notifications */}
-        <div style={{ marginBottom: '24px', paddingTop: '16px', borderTop: '1px solid #F1F5F9' }}>
-          <label style={labelStyle}>Notifications</label>
-          <p style={{ fontSize: '11px', color: '#94A3B8', marginBottom: '12px', lineHeight: '1.6' }}>
-            Get alerted when patients message you, even when the app isn't open.
-          </p>
-          <div style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            padding: '12px 14px', background: '#fff', border: '0.5px solid #E2E8E1',
-            borderRadius: '12px', marginBottom: '8px'
-          }}>
-            <span style={{ fontSize: '13px', color: '#2F3E46' }}>Push notifications</span>
+        {/* Card 6: Subscription */}
+        <div style={cardStyle}>
+          <div style={cardHeaderStyle}>Subscription</div>
+          <div style={cardBodyStyle}>
+            <p style={fieldNoteStyle}>
+              Manage your plan, update payment details or cancel anytime.
+            </p>
             <button
-              onClick={async () => {
-                const isCurrentlyEnabled = profile?.notifications_enabled;
-                if (!isCurrentlyEnabled) {
-                  const result = await registerPushNotifications();
-                  const { data: { session } } = await supabase.auth.getSession();
-                  if (!session) return;
-                  if (result.ok) {
-                    await supabase.from('practitioners')
-                      .update({ notifications_enabled: true })
-                      .eq('id', session.user.id);
-                    if (onProfileUpdate) onProfileUpdate();
-                    setNotifMessage('Notifications enabled on this device.');
-                  } else if (result.reason === 'denied') {
-                    setNotifMessage('Notifications blocked. Go to device Settings → Notifications to allow them.');
-                  } else if (result.reason === 'unsupported') {
-                    setNotifMessage("Push notifications aren't supported on this browser.");
-                  } else {
-                    setNotifMessage('Could not enable notifications. Try again.');
-                  }
-                } else {
-                  const { data: { session } } = await supabase.auth.getSession();
-                  if (!session) return;
-                  await supabase.from('practitioners')
-                    .update({ notifications_enabled: false })
-                    .eq('id', session.user.id);
-                  if (onProfileUpdate) onProfileUpdate();
-                  setNotifMessage('Notifications disabled.');
-                }
-              }}
+              onClick={openBillingPortal}
               style={{
-                width: '44px', height: '24px', borderRadius: '12px', border: 'none',
-                background: profile?.notifications_enabled ? '#588157' : '#D1D5DB',
-                cursor: 'pointer', position: 'relative', transition: 'background 0.2s', flexShrink: 0
+                width: '100%', padding: '12px', background: '#fff',
+                border: '0.5px solid #E2E8E1', borderRadius: '12px',
+                fontSize: '11px', fontWeight: '600', color: '#2F3E46',
+                cursor: 'pointer', fontFamily: "'Outfit', sans-serif",
+                textTransform: 'uppercase', letterSpacing: '0.08em'
               }}
             >
-              <div style={{
-                width: '18px', height: '18px', borderRadius: '50%', background: '#fff',
-                position: 'absolute', top: '3px',
-                left: profile?.notifications_enabled ? '23px' : '3px',
-                transition: 'left 0.2s'
-              }} />
+              Manage Billing →
             </button>
           </div>
-          {notifMessage && (
-            <p style={{ fontSize: '11px', color: '#64748B', lineHeight: '1.6', margin: '4px 0 0' }}>
-              {notifMessage}
-            </p>
-          )}
         </div>
 
-        {/* Export */}
-        <div style={{ marginBottom: '24px', paddingTop: '16px', borderTop: '1px solid #F1F5F9' }}>
-          <label style={labelStyle}>Message History</label>
-          <p style={{ fontSize: '11px', color: '#94A3B8', marginBottom: '12px', lineHeight: '1.6' }}>
-            Export your patient message history as a CSV file for your records.
-          </p>
-          <button
-            onClick={() => setShowExport(true)}
-            style={{
-              width: '100%', padding: '12px', background: '#fff',
-              border: '0.5px solid #E2E8E1', borderRadius: '12px',
-              fontSize: '11px', fontWeight: '600', color: '#2F3E46',
-              cursor: 'pointer', fontFamily: "'Outfit', sans-serif",
-              textTransform: 'uppercase', letterSpacing: '0.08em'
-            }}
-          >
-            Export Message History →
-          </button>
+        {/* Card 7: Notifications */}
+        <div style={cardStyle}>
+          <div style={cardHeaderStyle}>Notifications</div>
+          <div style={cardBodyStyle}>
+            <p style={fieldNoteStyle}>
+              Get alerted when patients message you, even when the app isn't open.
+            </p>
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '12px 14px', background: '#F7F6F2', border: '0.5px solid #E2E8E1',
+              borderRadius: '12px'
+            }}>
+              <span style={{ fontSize: '13px', color: '#2F3E46' }}>Push notifications</span>
+              <button
+                onClick={async () => {
+                  const isCurrentlyEnabled = profile?.notifications_enabled;
+                  if (!isCurrentlyEnabled) {
+                    const result = await registerPushNotifications();
+                    const { data: { session } } = await supabase.auth.getSession();
+                    if (!session) return;
+                    if (result.ok) {
+                      await supabase.from('practitioners')
+                        .update({ notifications_enabled: true })
+                        .eq('id', session.user.id);
+                      if (onProfileUpdate) onProfileUpdate();
+                      setNotifMessage('Notifications enabled on this device.');
+                    } else if (result.reason === 'denied') {
+                      setNotifMessage('Notifications blocked. Go to device Settings → Notifications to allow them.');
+                    } else if (result.reason === 'unsupported') {
+                      setNotifMessage("Push notifications aren't supported on this browser.");
+                    } else {
+                      setNotifMessage('Could not enable notifications. Try again.');
+                    }
+                  } else {
+                    const { data: { session } } = await supabase.auth.getSession();
+                    if (!session) return;
+                    await supabase.from('practitioners')
+                      .update({ notifications_enabled: false })
+                      .eq('id', session.user.id);
+                    if (onProfileUpdate) onProfileUpdate();
+                    setNotifMessage('Notifications disabled.');
+                  }
+                }}
+                style={{
+                  width: '44px', height: '24px', borderRadius: '12px', border: 'none',
+                  background: profile?.notifications_enabled ? '#588157' : '#D1D5DB',
+                  cursor: 'pointer', position: 'relative', transition: 'background 0.2s', flexShrink: 0
+                }}
+              >
+                <div style={{
+                  width: '18px', height: '18px', borderRadius: '50%', background: '#fff',
+                  position: 'absolute', top: '3px',
+                  left: profile?.notifications_enabled ? '23px' : '3px',
+                  transition: 'left 0.2s'
+                }} />
+              </button>
+            </div>
+            {notifMessage && (
+              <p style={{ fontSize: '11px', color: '#64748B', lineHeight: '1.6', margin: '0' }}>
+                {notifMessage}
+              </p>
+            )}
+          </div>
         </div>
+
+        {/* Card 8: Message history */}
+        <div style={cardStyle}>
+          <div style={cardHeaderStyle}>Message history</div>
+          <div style={cardBodyStyle}>
+            <p style={fieldNoteStyle}>
+              Export your patient message history as a CSV file for your records.
+            </p>
+            <button
+              onClick={() => setShowExport(true)}
+              style={{
+                width: '100%', padding: '12px', background: '#fff',
+                border: '0.5px solid #E2E8E1', borderRadius: '12px',
+                fontSize: '11px', fontWeight: '600', color: '#2F3E46',
+                cursor: 'pointer', fontFamily: "'Outfit', sans-serif",
+                textTransform: 'uppercase', letterSpacing: '0.08em'
+              }}
+            >
+              Export Message History →
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Sticky footer: save */}
+      <div style={{
+        position: 'fixed',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        background: '#fff',
+        borderTop: '0.5px solid #E2E8E1',
+        padding: '12px 16px',
+        paddingBottom: 'max(12px, env(safe-area-inset-bottom))',
+        zIndex: 9,
+      }}>
+        <button
+          onClick={saveSettings}
+          disabled={saving}
+          style={{
+            width: '100%',
+            padding: '12px',
+            background: '#588157',
+            color: '#fff',
+            border: 'none',
+            borderRadius: '12px',
+            fontSize: '13px',
+            fontWeight: '600',
+            cursor: saving ? 'not-allowed' : 'pointer',
+            fontFamily: "'Outfit', sans-serif",
+            opacity: saving ? 0.7 : 1,
+          }}
+        >
+          {saving ? 'Saving...' : 'Save settings'}
+        </button>
       </div>
 
       {showExport && (
@@ -652,7 +680,7 @@ You can book online anytime at [your booking link]"
       {/* Toast */}
       {showToast && (
         <div style={{
-          position: 'fixed', bottom: '20px', left: '12px', right: '12px',
+          position: 'fixed', bottom: '80px', left: '12px', right: '12px',
           background: '#2F3E46', color: 'white', padding: '12px 16px',
           borderRadius: '12px', fontSize: '12px', textAlign: 'center',
           zIndex: 200, boxShadow: '0 4px 16px rgba(0,0,0,0.15)'
