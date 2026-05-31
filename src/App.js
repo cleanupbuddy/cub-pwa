@@ -167,7 +167,9 @@ function App() {
           return;
         }
         // For short backgrounds, just refresh the auth session
-        supabase.auth.refreshSession().catch(() => {});
+        supabase.auth.getSession().then(({ data: { session } }) => {
+          if (session) supabase.auth.refreshSession().catch(() => {});
+        }).catch(() => {});
       }
     };
 
