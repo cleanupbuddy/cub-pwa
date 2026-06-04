@@ -140,6 +140,16 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
 
       console.log('✅ Contact name saved:', contactName);
 
+      try {
+        const saved = localStorage.getItem('cub_last_contact');
+        if (saved) {
+          const last = JSON.parse(saved);
+          if (last.phone === contact.phone) {
+            localStorage.setItem('cub_last_contact', JSON.stringify({ ...last, name: contactName.trim() }));
+          }
+        }
+      } catch {}
+
       if (onRead) onRead();
     } catch (err) {
       console.error('Save name error:', err);
