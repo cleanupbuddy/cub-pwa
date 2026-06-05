@@ -609,7 +609,7 @@ function ContactsList({ onSelectContact, clinicNumber, onArchiveChange, viewingA
             flexShrink: 0, fontWeight: viewingArchived ? '600' : '400'
           }}
         >
-          {viewingArchived ? '← Back to active conversations' : 'View archived →'}
+          {viewingArchived ? '← Active conversations' : 'Removed contacts →'}
         </div>
       )}
     </div>

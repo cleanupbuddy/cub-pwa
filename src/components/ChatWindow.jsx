@@ -18,6 +18,7 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteAgreed, setDeleteAgreed] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [showContactMenu, setShowContactMenu] = useState(false);
 
   const isMobile = /iPhone|iPod|Android.*Mobile/.test(navigator.userAgent);
   const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
@@ -459,45 +460,14 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
         </div>
 
         <button
-          onClick={(e) => {
-            e.stopPropagation();
-            archiveConversation(!isArchivedView);
-          }}
-          title={isArchivedView ? 'Restore conversation' : 'Archive conversation'}
-          style={{
-            width: '32px', height: '32px', borderRadius: '50%',
-            background: isArchivedView ? '#588157' : '#F7F6F2',
-            border: 'none', cursor: 'pointer',
-            display: 'flex', alignItems: 'center',
-            justifyContent: 'center', flexShrink: 0
-          }}
-        >
-          {isArchivedView ? (
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="1 4 1 10 7 10" />
-              <path d="M3.51 15a9 9 0 1 0 .49-3.75" />
-            </svg>
-          ) : (
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="21 8 21 21 3 21 3 8" />
-              <rect x="1" y="3" width="22" height="5" />
-              <line x1="10" y1="12" x2="14" y2="12" />
-            </svg>
-          )}
-        </button>
-
-        <button
-          onClick={() => { setShowDeleteConfirm(true); setDeleteAgreed(false); }}
+          onClick={e => { e.stopPropagation(); setShowContactMenu(true); }}
           style={{
             width: '32px', height: '32px', borderRadius: '50%',
             background: '#F7F6F2', border: 'none', cursor: 'pointer',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+            fontSize: '16px', color: '#64748b', letterSpacing: '1px'
           }}
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/>
-          </svg>
-        </button>
+        >···</button>
 
         <button
           onClick={() => setShowVoiceCall(true)}
@@ -779,6 +749,46 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
           </button>
         </div>
       )}
+      {showContactMenu && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(47,62,70,0.4)', zIndex: 400,
+          display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+          fontFamily: "'Outfit', sans-serif"
+        }}
+        onClick={() => setShowContactMenu(false)}
+        >
+          <div style={{
+            background: '#fff', borderRadius: '20px 20px 0 0',
+            padding: '20px 20px 40px', width: '100%', maxWidth: '500px'
+          }}
+          onClick={e => e.stopPropagation()}
+          >
+            <div style={{ width: '36px', height: '4px', background: '#E2E8E1', borderRadius: '2px', margin: '0 auto 20px' }} />
+            <button
+              onClick={() => { setShowContactMenu(false); archiveConversation(!isArchivedView); }}
+              style={{
+                width: '100%', padding: '14px 16px', background: 'none', border: 'none',
+                borderBottom: '0.5px solid #F1F5F9', textAlign: 'left',
+                fontSize: '14px', color: '#2F3E46', cursor: 'pointer',
+                fontFamily: "'Outfit', sans-serif", display: 'flex', alignItems: 'center', gap: '12px'
+              }}
+            >
+              {isArchivedView ? '↩ Add back to list' : '📋 Remove from list'}
+            </button>
+            <button
+              onClick={() => { setShowContactMenu(false); setShowDeleteConfirm(true); setDeleteAgreed(false); }}
+              style={{
+                width: '100%', padding: '14px 16px', background: 'none', border: 'none',
+                textAlign: 'left', fontSize: '14px', color: '#c0392b', cursor: 'pointer',
+                fontFamily: "'Outfit', sans-serif"
+              }}
+            >
+              🗑 Delete permanently (PIPA)
+            </button>
+          </div>
+        </div>
+      )}
       {showDeleteConfirm && (
         <div style={{
           position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
@@ -798,7 +808,7 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
               This permanently deletes all messages with {contact.name || contact.phone}. This cannot be undone.
             </div>
             <div style={{ fontSize: '11px', color: '#94A3B8', lineHeight: '1.7', marginBottom: '16px', background: '#F7F6F2', borderRadius: '10px', padding: '12px' }}>
-              💡 We recommend copying important messages into your patient charting software (e.g. Jane App) before deleting.
+              💡 Permanent deletion is the PIPA-compliant method for responding to a patient's request to have their personal information removed. For all other situations, use Remove from list — your records stay protected and recoverable.
             </div>
             <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', marginBottom: '20px', cursor: 'pointer' }}>
               <input
