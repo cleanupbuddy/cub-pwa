@@ -564,6 +564,9 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
                   {msg.direction === 'outbound' && msg.status === 'sending' && ' · Sending...'}
                   {msg.direction === 'outbound' && msg.isLocalFailure && ' · Failed — tap to retry'}
                   {msg.direction === 'outbound' && !msg.status && !msg.isLocalFailure && ' · Sent'}
+                  {msg.is_broadcast && (
+                    <span style={{ marginLeft: '4px', color: '#94A3B8' }}>· 📢</span>
+                  )}
                 </div>
               </div>
             </React.Fragment>

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { setUnreadBadge } from '../lib/badge';
 
-function ContactsList({ onSelectContact, clinicNumber, onArchiveChange, viewingArchived, refreshTrigger, currentUserId, onBroadcast, allContacts }) {
+function ContactsList({ onSelectContact, clinicNumber, onArchiveChange, viewingArchived, refreshTrigger, currentUserId, onBroadcast }) {
   const [contacts, setContacts] = useState([]);
   const [contactMap, setContactMap] = useState({});
   const [loading, setLoading] = useState(true);
@@ -13,6 +13,7 @@ function ContactsList({ onSelectContact, clinicNumber, onArchiveChange, viewingA
   const [broadcastMode, setBroadcastMode] = useState(false);
   const [selectedForBroadcast, setSelectedForBroadcast] = useState([]);
   const [broadcastMessage, setBroadcastMessage] = useState('');
+  const [allContactsForBroadcast, setAllContactsForBroadcast] = useState([]);
 
   const plusMenuRef = useRef(null);
 
@@ -26,6 +27,24 @@ function ContactsList({ onSelectContact, clinicNumber, onArchiveChange, viewingA
     document.addEventListener('mousedown', handleMouseDown);
     return () => document.removeEventListener('mousedown', handleMouseDown);
   }, [showPlusMenu]);
+
+  useEffect(() => {
+    if (!broadcastMode || !currentUserId) return;
+    const loadAll = async () => {
+      const { data } = await supabase
+        .from('contacts')
+        .select('phone_number, display_name')
+        .eq('practitioner_id', currentUserId)
+        .order('display_name', { ascending: true, nullsFirst: false });
+      if (data) {
+        setAllContactsForBroadcast(data.map(c => ({
+          phone: c.phone_number,
+          name: c.display_name
+        })));
+      }
+    };
+    loadAll();
+  }, [broadcastMode, currentUserId]);
 
   useEffect(() => {
     let channel;
@@ -277,8 +296,8 @@ function ContactsList({ onSelectContact, clinicNumber, onArchiveChange, viewingA
 
   const showEmptyState = !loading && filtered.length === 0;
 
-  const broadcastFiltered = (allContacts || []).filter(c => {
-    const name = contactMap[c.phone] || c.phone;
+  const broadcastFiltered = allContactsForBroadcast.filter(c => {
+    const name = c.name || contactMap[c.phone] || c.phone;
     return name.toLowerCase().includes(search.toLowerCase());
   });
 
@@ -412,7 +431,7 @@ function ContactsList({ onSelectContact, clinicNumber, onArchiveChange, viewingA
             </div>
           ) : (
             broadcastFiltered.map(contact => {
-              const name = contactMap[contact.phone];
+              const name = contact.name || contactMap[contact.phone];
               const isSelected = selectedForBroadcast.includes(contact.phone);
               return (
                 <div
@@ -545,7 +564,7 @@ function ContactsList({ onSelectContact, clinicNumber, onArchiveChange, viewingA
             placeholder="Type your message..."
             style={{
               width: '100%', background: '#F7F6F2', border: '0.5px solid #E2E8E1',
-              borderRadius: '10px', padding: '10px 12px', fontSize: '13px',
+              borderRadius: '10px', padding: '10px 12px', fontSize: '16px',
               color: '#2F3E46', fontFamily: "'Outfit', sans-serif", outline: 'none',
               resize: 'none', boxSizing: 'border-box', height: '72px', marginBottom: '4px'
             }}
