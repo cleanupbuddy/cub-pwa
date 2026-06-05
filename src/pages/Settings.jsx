@@ -44,6 +44,11 @@ function Settings({ onBack, profile, onProfileUpdate }) {
   const [deleteAllAgreed, setDeleteAllAgreed] = useState(false);
   const [deleteAllTyped, setDeleteAllTyped] = useState('');
   const [deletingAll, setDeletingAll] = useState(false);
+  const [showDeleteAccount, setShowDeleteAccount] = useState(false);
+  const [deleteAccountStep, setDeleteAccountStep] = useState(1);
+  const [deleteAccountAgreed, setDeleteAccountAgreed] = useState(false);
+  const [deleteAccountTyped, setDeleteAccountTyped] = useState('');
+  const [deletingAccount, setDeletingAccount] = useState(false);
 
   useEffect(() => {
     if (profile) {
@@ -201,6 +206,46 @@ function Settings({ onBack, profile, onProfileUpdate }) {
       console.error('Delete all error:', err);
     } finally {
       setDeletingAll(false);
+    }
+  };
+
+  const deleteAccount = async () => {
+    if (deletingAccount) return;
+    setDeletingAccount(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      await supabase.from('deletion_logs').insert([{
+        practitioner_id: session.user.id,
+        practitioner_email: session.user.email,
+        action: 'delete_account',
+        agreed_to_terms: true,
+        details: { scope: 'full_account_deletion' }
+      }]);
+
+      await supabase.from('messages')
+        .delete()
+        .eq('practitioner_id', session.user.id);
+
+      await supabase.from('contacts')
+        .delete()
+        .eq('practitioner_id', session.user.id);
+
+      await supabase.from('export_logs')
+        .delete()
+        .eq('practitioner_id', session.user.id);
+
+      await supabase.from('practitioners')
+        .delete()
+        .eq('id', session.user.id);
+
+      await supabase.auth.signOut();
+      localStorage.clear();
+      window.location.href = '/login';
+    } catch (err) {
+      console.error('Delete account error:', err);
+      setDeletingAccount(false);
     }
   };
 
@@ -696,6 +741,28 @@ function Settings({ onBack, profile, onProfileUpdate }) {
         </div>
       </div>
 
+      {/* Card 9: Account */}
+      <div style={cardStyle}>
+        <div style={cardHeaderStyle}>Account</div>
+        <div style={cardBodyStyle}>
+          <p style={fieldNoteStyle}>
+            Permanently delete your account and all associated data. This cannot be undone.
+          </p>
+          <button
+            onClick={() => setShowDeleteAccount(true)}
+            style={{
+              width: '100%', padding: '12px', background: '#fff',
+              border: '0.5px solid #F4C2C2', borderRadius: '12px',
+              fontSize: '11px', fontWeight: '600', color: '#c0392b',
+              cursor: 'pointer', fontFamily: "'Outfit', sans-serif",
+              textTransform: 'uppercase', letterSpacing: '0.08em'
+            }}
+          >
+            Delete Account →
+          </button>
+        </div>
+      </div>
+
       {/* Sticky footer: save */}
       <div style={{
         position: 'fixed',
@@ -864,6 +931,182 @@ function Settings({ onBack, profile, onProfileUpdate }) {
                 </button>
                 <button
                   onClick={() => { setShowDeleteAll(false); setDeleteAllStep(1); setDeleteAllAgreed(false); setDeleteAllTyped(''); }}
+                  style={{
+                    width: '100%', padding: '13px', background: 'none', border: 'none',
+                    fontSize: '13px', color: '#94A3B8', cursor: 'pointer',
+                    fontFamily: "'Outfit', sans-serif"
+                  }}
+                >
+                  Cancel
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {showDeleteAccount && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(47,62,70,0.6)', zIndex: 400,
+          display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+          fontFamily: "'Outfit', sans-serif"
+        }}>
+          <div style={{
+            background: '#fff', borderRadius: '20px 20px 0 0',
+            padding: '24px 20px 40px', width: '100%', maxWidth: '500px'
+          }}>
+            <div style={{ width: '36px', height: '4px', background: '#E2E8E1', borderRadius: '2px', margin: '0 auto 20px' }} />
+
+            {deleteAccountStep === 1 && (
+              <>
+                <div style={{ fontSize: '15px', fontWeight: '600', color: '#2F3E46', marginBottom: '8px' }}>
+                  Delete your account?
+                </div>
+                <div style={{ fontSize: '12px', color: '#94A3B8', lineHeight: '1.7', marginBottom: '16px' }}>
+                  This permanently deletes your account, all patient messages, contacts, and clinic number. This cannot be undone.
+                </div>
+                <div style={{ fontSize: '11px', color: '#c0392b', lineHeight: '1.7', marginBottom: '20px', background: '#FFF0F0', borderRadius: '10px', padding: '12px' }}>
+                  ⚠️ Deleting your account does not cancel your Stripe subscription. You will need to cancel it separately. We'll remind you at the final step.
+                </div>
+                <button
+                  onClick={() => setDeleteAccountStep(2)}
+                  style={{
+                    width: '100%', padding: '13px', background: '#2F3E46', border: 'none',
+                    borderRadius: '12px', fontSize: '11px', fontWeight: '600', color: 'white',
+                    cursor: 'pointer', fontFamily: "'Outfit', sans-serif",
+                    textTransform: 'uppercase', letterSpacing: '0.08em'
+                  }}
+                >
+                  Continue
+                </button>
+              </>
+            )}
+
+            {deleteAccountStep === 2 && (
+              <>
+                <div style={{ fontSize: '15px', fontWeight: '600', color: '#2F3E46', marginBottom: '16px' }}>
+                  Before you continue
+                </div>
+                <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', marginBottom: '20px', cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={deleteAccountAgreed}
+                    onChange={e => setDeleteAccountAgreed(e.target.checked)}
+                    style={{ marginTop: '2px', accentColor: '#588157', flexShrink: 0 }}
+                  />
+                  <span style={{ fontSize: '11px', color: '#2F3E46', lineHeight: '1.6' }}>
+                    I understand that my account and all data will be permanently deleted. I am responsible for retaining any records required by my regulatory college. The recommended approach is to copy relevant conversations into my patient charting software (e.g. Jane App) before deleting.
+                  </span>
+                </label>
+                <button
+                  onClick={() => { if (deleteAccountAgreed) setDeleteAccountStep(3); }}
+                  disabled={!deleteAccountAgreed}
+                  style={{
+                    width: '100%', padding: '13px', marginBottom: '10px',
+                    background: deleteAccountAgreed ? '#2F3E46' : '#E2E8E1',
+                    color: deleteAccountAgreed ? 'white' : '#94A3B8',
+                    border: 'none', borderRadius: '12px', fontSize: '13px', fontWeight: '600',
+                    cursor: deleteAccountAgreed ? 'pointer' : 'not-allowed',
+                    fontFamily: "'Outfit', sans-serif"
+                  }}
+                >
+                  Continue
+                </button>
+                <button
+                  onClick={() => { setShowDeleteAccount(false); setDeleteAccountStep(1); setDeleteAccountAgreed(false); }}
+                  style={{
+                    width: '100%', padding: '13px', background: 'none', border: 'none',
+                    fontSize: '13px', color: '#94A3B8', cursor: 'pointer',
+                    fontFamily: "'Outfit', sans-serif"
+                  }}
+                >
+                  Cancel
+                </button>
+              </>
+            )}
+
+            {deleteAccountStep === 3 && (
+              <>
+                <div style={{ fontSize: '15px', fontWeight: '600', color: '#2F3E46', marginBottom: '8px' }}>
+                  Type DELETE to confirm
+                </div>
+                <input
+                  type="text"
+                  value={deleteAccountTyped}
+                  onChange={e => setDeleteAccountTyped(e.target.value)}
+                  placeholder="Type DELETE here"
+                  style={{
+                    width: '100%', padding: '12px', marginBottom: '16px',
+                    border: '0.5px solid #E2E8E1', borderRadius: '12px',
+                    color: '#2F3E46', background: '#F7F6F2',
+                    outline: 'none', fontFamily: "'Outfit', sans-serif",
+                    boxSizing: 'border-box', fontSize: '16px'
+                  }}
+                />
+                <button
+                  onClick={() => { if (deleteAccountTyped === 'DELETE') setDeleteAccountStep(4); }}
+                  disabled={deleteAccountTyped !== 'DELETE'}
+                  style={{
+                    width: '100%', padding: '13px', marginBottom: '10px',
+                    background: deleteAccountTyped === 'DELETE' ? '#2F3E46' : '#E2E8E1',
+                    color: deleteAccountTyped === 'DELETE' ? 'white' : '#94A3B8',
+                    border: 'none', borderRadius: '12px', fontSize: '13px', fontWeight: '600',
+                    cursor: deleteAccountTyped === 'DELETE' ? 'pointer' : 'not-allowed',
+                    fontFamily: "'Outfit', sans-serif"
+                  }}
+                >
+                  Continue
+                </button>
+                <button
+                  onClick={() => { setShowDeleteAccount(false); setDeleteAccountStep(1); setDeleteAccountAgreed(false); setDeleteAccountTyped(''); }}
+                  style={{
+                    width: '100%', padding: '13px', background: 'none', border: 'none',
+                    fontSize: '13px', color: '#94A3B8', cursor: 'pointer',
+                    fontFamily: "'Outfit', sans-serif"
+                  }}
+                >
+                  Cancel
+                </button>
+              </>
+            )}
+
+            {deleteAccountStep === 4 && (
+              <>
+                <div style={{ fontSize: '15px', fontWeight: '600', color: '#c0392b', marginBottom: '8px' }}>
+                  Last chance
+                </div>
+                <div style={{ fontSize: '12px', color: '#94A3B8', lineHeight: '1.7', marginBottom: '16px' }}>
+                  Once you tap Delete Account, your account is gone permanently. Make sure you have cancelled your Stripe subscription.
+                </div>
+                <button
+                  onClick={() => { openBillingPortal(); setShowDeleteAccount(false); }}
+                  style={{
+                    width: '100%', padding: '13px', marginBottom: '8px', background: '#fff',
+                    border: '0.5px solid #E2E8E1', borderRadius: '12px',
+                    fontSize: '11px', fontWeight: '600', color: '#2F3E46',
+                    cursor: 'pointer', fontFamily: "'Outfit', sans-serif",
+                    textTransform: 'uppercase', letterSpacing: '0.08em'
+                  }}
+                >
+                  Cancel Subscription
+                </button>
+                <button
+                  onClick={deleteAccount}
+                  disabled={deletingAccount}
+                  style={{
+                    width: '100%', padding: '13px', marginBottom: '10px',
+                    background: '#c0392b', color: 'white',
+                    border: 'none', borderRadius: '12px', fontSize: '13px', fontWeight: '600',
+                    cursor: deletingAccount ? 'not-allowed' : 'pointer',
+                    fontFamily: "'Outfit', sans-serif",
+                    opacity: deletingAccount ? 0.7 : 1
+                  }}
+                >
+                  {deletingAccount ? 'Deleting...' : 'Delete Account Permanently'}
+                </button>
+                <button
+                  onClick={() => { setShowDeleteAccount(false); setDeleteAccountStep(1); setDeleteAccountAgreed(false); setDeleteAccountTyped(''); }}
                   style={{
                     width: '100%', padding: '13px', background: 'none', border: 'none',
                     fontSize: '13px', color: '#94A3B8', cursor: 'pointer',
