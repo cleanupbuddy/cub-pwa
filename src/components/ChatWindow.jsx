@@ -15,6 +15,9 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
   const [archived, setArchived] = useState(false);
   const [archiveError, setArchiveError] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteAgreed, setDeleteAgreed] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const isMobile = /iPhone|iPod|Android.*Mobile/.test(navigator.userAgent);
   const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
@@ -338,6 +341,41 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
     }
   };
 
+  const deleteConversation = async () => {
+    if (!deleteAgreed || deleting) return;
+    setDeleting(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      await supabase.from('messages')
+        .delete()
+        .eq('practitioner_id', currentUserId)
+        .or(`from_number.eq.${contact.phone},to_number.eq.${contact.phone}`);
+
+      await supabase.from('contacts')
+        .delete()
+        .eq('practitioner_id', currentUserId)
+        .eq('phone_number', contact.phone);
+
+      await supabase.from('deletion_logs').insert([{
+        practitioner_id: currentUserId,
+        practitioner_email: session.user.email,
+        action: 'delete_contact',
+        agreed_to_terms: true,
+        details: { contact_phone: contact.phone, contact_name: contact.name || null }
+      }]);
+
+      setShowDeleteConfirm(false);
+      if (onArchived) onArchived();
+      if (onBack) onBack();
+    } catch (err) {
+      console.error('Delete conversation error:', err);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const visibleMessages = messages.filter(
     msg =>
       msg.direction === 'system' ||
@@ -446,6 +484,19 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
               <line x1="10" y1="12" x2="14" y2="12" />
             </svg>
           )}
+        </button>
+
+        <button
+          onClick={() => { setShowDeleteConfirm(true); setDeleteAgreed(false); }}
+          style={{
+            width: '32px', height: '32px', borderRadius: '50%',
+            background: '#F7F6F2', border: 'none', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+          }}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/>
+          </svg>
         </button>
 
         <button
@@ -726,6 +777,65 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
           >
             Undo
           </button>
+        </div>
+      )}
+      {showDeleteConfirm && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(47,62,70,0.6)', zIndex: 400,
+          display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+          fontFamily: "'Outfit', sans-serif"
+        }}>
+          <div style={{
+            background: '#fff', borderRadius: '20px 20px 0 0',
+            padding: '24px 20px 40px', width: '100%', maxWidth: '500px'
+          }}>
+            <div style={{ width: '36px', height: '4px', background: '#E2E8E1', borderRadius: '2px', margin: '0 auto 20px' }} />
+            <div style={{ fontSize: '15px', fontWeight: '600', color: '#2F3E46', marginBottom: '8px' }}>
+              Delete this conversation?
+            </div>
+            <div style={{ fontSize: '12px', color: '#94A3B8', lineHeight: '1.7', marginBottom: '16px' }}>
+              This permanently deletes all messages with {contact.name || contact.phone}. This cannot be undone.
+            </div>
+            <div style={{ fontSize: '11px', color: '#94A3B8', lineHeight: '1.7', marginBottom: '16px', background: '#F7F6F2', borderRadius: '10px', padding: '12px' }}>
+              💡 We recommend copying important messages into your patient charting software (e.g. Jane App) before deleting.
+            </div>
+            <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', marginBottom: '20px', cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={deleteAgreed}
+                onChange={e => setDeleteAgreed(e.target.checked)}
+                style={{ marginTop: '2px', accentColor: '#588157', flexShrink: 0 }}
+              />
+              <span style={{ fontSize: '11px', color: '#2F3E46', lineHeight: '1.6' }}>
+                I understand that deleted conversations cannot be recovered. I am responsible for retaining any records required by my regulatory college.
+              </span>
+            </label>
+            <button
+              onClick={deleteConversation}
+              disabled={!deleteAgreed || deleting}
+              style={{
+                width: '100%', padding: '13px', marginBottom: '10px',
+                background: deleteAgreed ? '#c0392b' : '#E2E8E1',
+                color: deleteAgreed ? 'white' : '#94A3B8',
+                border: 'none', borderRadius: '12px', fontSize: '13px', fontWeight: '600',
+                cursor: deleteAgreed ? 'pointer' : 'not-allowed',
+                fontFamily: "'Outfit', sans-serif"
+              }}
+            >
+              {deleting ? 'Deleting...' : 'Delete permanently'}
+            </button>
+            <button
+              onClick={() => setShowDeleteConfirm(false)}
+              style={{
+                width: '100%', padding: '13px', background: 'none', border: 'none',
+                fontSize: '13px', color: '#94A3B8', cursor: 'pointer',
+                fontFamily: "'Outfit', sans-serif"
+              }}
+            >
+              Cancel
+            </button>
+          </div>
         </div>
       )}
     </div>
