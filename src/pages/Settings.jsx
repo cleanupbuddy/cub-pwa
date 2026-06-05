@@ -39,6 +39,11 @@ function Settings({ onBack, profile, onProfileUpdate }) {
   const [otherProfession, setOtherProfession] = useState('');
   const [otherProfessionAbbreviation, setOtherProfessionAbbreviation] = useState('');
   const [notifMessage, setNotifMessage] = useState('');
+  const [showDeleteAll, setShowDeleteAll] = useState(false);
+  const [deleteAllStep, setDeleteAllStep] = useState(1);
+  const [deleteAllAgreed, setDeleteAllAgreed] = useState(false);
+  const [deleteAllTyped, setDeleteAllTyped] = useState('');
+  const [deletingAll, setDeletingAll] = useState(false);
 
   useEffect(() => {
     if (profile) {
@@ -155,6 +160,47 @@ function Settings({ onBack, profile, onProfileUpdate }) {
       console.error('Save error:', err);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const deleteAllConversations = async () => {
+    if (deletingAll) return;
+    setDeletingAll(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      await supabase.from('messages')
+        .delete()
+        .eq('practitioner_id', session.user.id);
+
+      await supabase.from('contacts')
+        .delete()
+        .eq('practitioner_id', session.user.id);
+
+      await supabase.from('export_logs')
+        .delete()
+        .eq('practitioner_id', session.user.id);
+
+      await supabase.from('deletion_logs').insert([{
+        practitioner_id: session.user.id,
+        practitioner_email: session.user.email,
+        action: 'delete_all_conversations',
+        agreed_to_terms: true,
+        details: { scope: 'all_messages_contacts_export_logs' }
+      }]);
+
+      setShowDeleteAll(false);
+      setDeleteAllStep(1);
+      setDeleteAllAgreed(false);
+      setDeleteAllTyped('');
+      if (onProfileUpdate) onProfileUpdate();
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 2000);
+    } catch (err) {
+      console.error('Delete all error:', err);
+    } finally {
+      setDeletingAll(false);
     }
   };
 
@@ -619,7 +665,7 @@ function Settings({ onBack, profile, onProfileUpdate }) {
           <div style={cardHeaderStyle}>Message history</div>
           <div style={cardBodyStyle}>
             <p style={fieldNoteStyle}>
-              Export your patient message history as a CSV file for your records.
+              Export your patient message history as a CSV file for your records. Conversations are archived to protect your professional records — you can permanently delete them at any time.
             </p>
             <button
               onClick={() => setShowExport(true)}
@@ -632,6 +678,19 @@ function Settings({ onBack, profile, onProfileUpdate }) {
               }}
             >
               Export Message History →
+            </button>
+            <button
+              onClick={() => setShowDeleteAll(true)}
+              style={{
+                width: '100%', padding: '12px', background: '#fff',
+                border: '0.5px solid #F4C2C2', borderRadius: '12px',
+                fontSize: '11px', fontWeight: '600', color: '#c0392b',
+                cursor: 'pointer', fontFamily: "'Outfit', sans-serif",
+                textTransform: 'uppercase', letterSpacing: '0.08em',
+                marginTop: '8px'
+              }}
+            >
+              Delete All Conversations →
             </button>
           </div>
         </div>
@@ -675,6 +734,148 @@ function Settings({ onBack, profile, onProfileUpdate }) {
           clinicNumber={profile?.clinic_number}
           onClose={() => setShowExport(false)}
         />
+      )}
+
+      {showDeleteAll && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(47,62,70,0.6)', zIndex: 400,
+          display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+          fontFamily: "'Outfit', sans-serif"
+        }}>
+          <div style={{
+            background: '#fff', borderRadius: '20px 20px 0 0',
+            padding: '24px 20px 40px', width: '100%', maxWidth: '500px'
+          }}>
+            <div style={{ width: '36px', height: '4px', background: '#E2E8E1', borderRadius: '2px', margin: '0 auto 20px' }} />
+
+            {deleteAllStep === 1 && (
+              <>
+                <div style={{ fontSize: '15px', fontWeight: '600', color: '#2F3E46', marginBottom: '8px' }}>
+                  Delete all conversations?
+                </div>
+                <div style={{ fontSize: '12px', color: '#94A3B8', lineHeight: '1.7', marginBottom: '16px' }}>
+                  This permanently deletes all patient messages and contacts. This cannot be undone.
+                </div>
+                <div style={{ fontSize: '11px', color: '#94A3B8', lineHeight: '1.7', marginBottom: '20px', background: '#F7F6F2', borderRadius: '10px', padding: '12px' }}>
+                  💡 We recommend exporting your message history before deleting.
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                  <button
+                    onClick={() => { setShowExport(true); setShowDeleteAll(false); }}
+                    style={{
+                      padding: '13px', background: '#fff', border: '0.5px solid #E2E8E1',
+                      borderRadius: '12px', fontSize: '11px', fontWeight: '600', color: '#2F3E46',
+                      cursor: 'pointer', fontFamily: "'Outfit', sans-serif",
+                      textTransform: 'uppercase', letterSpacing: '0.08em'
+                    }}
+                  >
+                    Export First
+                  </button>
+                  <button
+                    onClick={() => setDeleteAllStep(2)}
+                    style={{
+                      padding: '13px', background: '#2F3E46', border: 'none',
+                      borderRadius: '12px', fontSize: '11px', fontWeight: '600', color: 'white',
+                      cursor: 'pointer', fontFamily: "'Outfit', sans-serif",
+                      textTransform: 'uppercase', letterSpacing: '0.08em'
+                    }}
+                  >
+                    Continue
+                  </button>
+                </div>
+              </>
+            )}
+
+            {deleteAllStep === 2 && (
+              <>
+                <div style={{ fontSize: '15px', fontWeight: '600', color: '#2F3E46', marginBottom: '16px' }}>
+                  Before you continue
+                </div>
+                <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', marginBottom: '20px', cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={deleteAllAgreed}
+                    onChange={e => setDeleteAllAgreed(e.target.checked)}
+                    style={{ marginTop: '2px', accentColor: '#588157', flexShrink: 0 }}
+                  />
+                  <span style={{ fontSize: '11px', color: '#2F3E46', lineHeight: '1.6' }}>
+                    I understand that deleted conversations cannot be recovered. I am responsible for retaining any records required by my regulatory college. The recommended approach is to copy relevant conversations into my patient charting software (e.g. Jane App) before deleting.
+                  </span>
+                </label>
+                <button
+                  onClick={() => { if (deleteAllAgreed) setDeleteAllStep(3); }}
+                  disabled={!deleteAllAgreed}
+                  style={{
+                    width: '100%', padding: '13px', marginBottom: '10px',
+                    background: deleteAllAgreed ? '#2F3E46' : '#E2E8E1',
+                    color: deleteAllAgreed ? 'white' : '#94A3B8',
+                    border: 'none', borderRadius: '12px', fontSize: '13px', fontWeight: '600',
+                    cursor: deleteAllAgreed ? 'pointer' : 'not-allowed',
+                    fontFamily: "'Outfit', sans-serif"
+                  }}
+                >
+                  Continue
+                </button>
+                <button
+                  onClick={() => { setShowDeleteAll(false); setDeleteAllStep(1); setDeleteAllAgreed(false); }}
+                  style={{
+                    width: '100%', padding: '13px', background: 'none', border: 'none',
+                    fontSize: '13px', color: '#94A3B8', cursor: 'pointer',
+                    fontFamily: "'Outfit', sans-serif"
+                  }}
+                >
+                  Cancel
+                </button>
+              </>
+            )}
+
+            {deleteAllStep === 3 && (
+              <>
+                <div style={{ fontSize: '15px', fontWeight: '600', color: '#2F3E46', marginBottom: '8px' }}>
+                  Type DELETE to confirm
+                </div>
+                <input
+                  type="text"
+                  value={deleteAllTyped}
+                  onChange={e => setDeleteAllTyped(e.target.value)}
+                  placeholder="Type DELETE here"
+                  style={{
+                    width: '100%', padding: '12px', marginBottom: '16px',
+                    border: '0.5px solid #E2E8E1', borderRadius: '12px',
+                    color: '#2F3E46', background: '#F7F6F2',
+                    outline: 'none', fontFamily: "'Outfit', sans-serif",
+                    boxSizing: 'border-box', fontSize: '16px'
+                  }}
+                />
+                <button
+                  onClick={deleteAllConversations}
+                  disabled={deleteAllTyped !== 'DELETE' || deletingAll}
+                  style={{
+                    width: '100%', padding: '13px', marginBottom: '10px',
+                    background: deleteAllTyped === 'DELETE' ? '#c0392b' : '#E2E8E1',
+                    color: deleteAllTyped === 'DELETE' ? 'white' : '#94A3B8',
+                    border: 'none', borderRadius: '12px', fontSize: '13px', fontWeight: '600',
+                    cursor: deleteAllTyped === 'DELETE' ? 'pointer' : 'not-allowed',
+                    fontFamily: "'Outfit', sans-serif"
+                  }}
+                >
+                  {deletingAll ? 'Deleting...' : 'Delete permanently'}
+                </button>
+                <button
+                  onClick={() => { setShowDeleteAll(false); setDeleteAllStep(1); setDeleteAllAgreed(false); setDeleteAllTyped(''); }}
+                  style={{
+                    width: '100%', padding: '13px', background: 'none', border: 'none',
+                    fontSize: '13px', color: '#94A3B8', cursor: 'pointer',
+                    fontFamily: "'Outfit', sans-serif"
+                  }}
+                >
+                  Cancel
+                </button>
+              </>
+            )}
+          </div>
+        </div>
       )}
 
       {/* Toast */}
