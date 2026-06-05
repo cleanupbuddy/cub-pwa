@@ -32,6 +32,8 @@ function Dashboard() {
   const [showShareFeedback, setShowShareFeedback] = useState(false);
   const [currentUserId, setCurrentUserId] = useState(null);
   const [showNotificationPrompt, setShowNotificationPrompt] = useState(false);
+  const [broadcastConfirm, setBroadcastConfirm] = useState(null);
+  const [broadcastProgress, setBroadcastProgress] = useState(null);
 
   const hasAutoSelectedRef = useRef(false);
 
@@ -176,6 +178,35 @@ function Dashboard() {
       if (key.startsWith('sb-')) localStorage.removeItem(key);
     });
     window.location.reload();
+  };
+
+  const handleBroadcast = (phones, message) => {
+    if (!phones.length || !message.trim()) return;
+    setBroadcastConfirm({ phones, message });
+  };
+
+  const executeBroadcast = async ({ phones, message }) => {
+    setBroadcastConfirm(null);
+    setBroadcastProgress({ total: phones.length, sent: 0, failed: 0, done: false });
+    for (let i = 0; i < phones.length; i++) {
+      try {
+        await fetch('https://cub-bridge-api.vercel.app/api/send-sms', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            to: phones[i],
+            from: profile?.clinic_number,
+            message,
+            isBroadcast: true
+          })
+        });
+        setBroadcastProgress(prev => ({ ...prev, sent: prev.sent + 1 }));
+      } catch {
+        setBroadcastProgress(prev => ({ ...prev, failed: prev.failed + 1 }));
+      }
+      if (i < phones.length - 1) await new Promise(r => setTimeout(r, 1100));
+    }
+    setBroadcastProgress(prev => ({ ...prev, done: true }));
   };
 
   const handleSelectContact = (phone, name, isArchived = false) => {
@@ -489,6 +520,7 @@ function Dashboard() {
               viewingArchived={viewingArchived}
               refreshTrigger={refreshContacts}
               currentUserId={currentUserId}
+              onBroadcast={handleBroadcast}
             />
           </div>
 
@@ -544,6 +576,7 @@ function Dashboard() {
               viewingArchived={viewingArchived}
               refreshTrigger={refreshContacts}
               currentUserId={currentUserId}
+              onBroadcast={handleBroadcast}
             />
           </div>
 
@@ -594,6 +627,103 @@ function Dashboard() {
                   </div>
                 </div>
               </div>
+            )}
+          </div>
+        </div>
+      )}
+      {/* Broadcast confirmation bottom sheet */}
+      {broadcastConfirm && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(47,62,70,0.4)', zIndex: 300,
+          display: 'flex', alignItems: 'flex-end',
+          fontFamily: "'Outfit', sans-serif"
+        }}>
+          <div style={{
+            background: '#fff', borderRadius: '20px 20px 0 0',
+            padding: '20px 20px 32px', width: '100%',
+            border: '0.5px solid #E2E8E1'
+          }}>
+            <div style={{ width: '36px', height: '4px', background: '#E2E8E1', borderRadius: '2px', margin: '0 auto 16px' }} />
+            <div style={{ fontSize: '14px', fontWeight: '500', color: '#2F3E46', marginBottom: '4px' }}>Send broadcast?</div>
+            <div style={{ fontSize: '11px', color: '#94A3B8', marginBottom: '16px' }}>
+              This will send your message to {broadcastConfirm.phones.length} patient{broadcastConfirm.phones.length !== 1 ? 's' : ''}.
+            </div>
+            <div style={{
+              background: '#F7F6F2', borderRadius: '10px', padding: '10px 12px',
+              fontSize: '12px', color: '#2F3E46', marginBottom: '16px',
+              lineHeight: '1.5', wordBreak: 'break-word'
+            }}>
+              {broadcastConfirm.message}
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+              <button
+                onClick={() => setBroadcastConfirm(null)}
+                style={{
+                  height: '44px', background: '#fff', border: '0.5px solid #E2E8E1',
+                  borderRadius: '12px', fontSize: '10px', fontWeight: '600',
+                  color: '#94A3B8', cursor: 'pointer', fontFamily: "'Outfit', sans-serif",
+                  textTransform: 'uppercase', letterSpacing: '0.08em'
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => executeBroadcast(broadcastConfirm)}
+                style={{
+                  height: '44px', background: '#588157', border: 'none',
+                  borderRadius: '12px', fontSize: '10px', fontWeight: '600',
+                  color: 'white', cursor: 'pointer', fontFamily: "'Outfit', sans-serif",
+                  textTransform: 'uppercase', letterSpacing: '0.08em'
+                }}
+              >
+                Send
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Broadcast progress modal */}
+      {broadcastProgress && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(47,62,70,0.4)', zIndex: 300,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontFamily: "'Outfit', sans-serif"
+        }}>
+          <div style={{
+            background: '#fff', borderRadius: '16px',
+            padding: '24px 20px', width: '280px',
+            border: '0.5px solid #E2E8E1',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.12)'
+          }}>
+            <div style={{ fontSize: '14px', fontWeight: '500', color: '#2F3E46', marginBottom: '4px' }}>
+              {broadcastProgress.done ? 'Broadcast complete' : 'Sending broadcast…'}
+            </div>
+            <div style={{ fontSize: '11px', color: '#94A3B8', marginBottom: '16px' }}>
+              {broadcastProgress.sent + broadcastProgress.failed} of {broadcastProgress.total} sent
+              {broadcastProgress.failed > 0 ? ` · ${broadcastProgress.failed} failed` : ''}
+            </div>
+            <div style={{ background: '#E2E8E1', borderRadius: '4px', height: '6px', overflow: 'hidden', marginBottom: '16px' }}>
+              <div style={{
+                height: '100%', borderRadius: '4px', background: '#9CAF88',
+                width: `${((broadcastProgress.sent + broadcastProgress.failed) / broadcastProgress.total) * 100}%`,
+                transition: 'width 0.3s ease'
+              }} />
+            </div>
+            {broadcastProgress.done && (
+              <button
+                onClick={() => setBroadcastProgress(null)}
+                style={{
+                  width: '100%', height: '40px', background: '#588157', border: 'none',
+                  borderRadius: '10px', fontSize: '10px', fontWeight: '600',
+                  color: 'white', cursor: 'pointer', fontFamily: "'Outfit', sans-serif",
+                  textTransform: 'uppercase', letterSpacing: '0.08em'
+                }}
+              >
+                Done
+              </button>
             )}
           </div>
         </div>
