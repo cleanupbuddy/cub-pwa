@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { setUnreadBadge } from '../lib/badge';
 
-function ContactsList({ onSelectContact, clinicNumber, onArchiveChange, viewingArchived, refreshTrigger, currentUserId, onBroadcast }) {
+function ContactsList({ onSelectContact, clinicNumber, onArchiveChange, viewingArchived, refreshTrigger, currentUserId, onBroadcast, broadcastResetKey }) {
   const [contacts, setContacts] = useState([]);
   const [contactMap, setContactMap] = useState({});
   const [loading, setLoading] = useState(true);
@@ -16,6 +16,13 @@ function ContactsList({ onSelectContact, clinicNumber, onArchiveChange, viewingA
   const [allContactsForBroadcast, setAllContactsForBroadcast] = useState([]);
 
   const plusMenuRef = useRef(null);
+
+  useEffect(() => {
+    if (broadcastResetKey === 0) return;
+    setBroadcastMode(false);
+    setSelectedForBroadcast([]);
+    setBroadcastMessage('');
+  }, [broadcastResetKey]);
 
   useEffect(() => {
     if (!showPlusMenu) return;

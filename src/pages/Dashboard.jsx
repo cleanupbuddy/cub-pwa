@@ -34,6 +34,7 @@ function Dashboard() {
   const [showNotificationPrompt, setShowNotificationPrompt] = useState(false);
   const [broadcastConfirm, setBroadcastConfirm] = useState(null);
   const [broadcastProgress, setBroadcastProgress] = useState(null);
+  const [broadcastResetKey, setBroadcastResetKey] = useState(0);
 
   const hasAutoSelectedRef = useRef(false);
 
@@ -521,6 +522,7 @@ function Dashboard() {
               refreshTrigger={refreshContacts}
               currentUserId={currentUserId}
               onBroadcast={handleBroadcast}
+              broadcastResetKey={broadcastResetKey}
             />
           </div>
 
@@ -577,6 +579,7 @@ function Dashboard() {
               refreshTrigger={refreshContacts}
               currentUserId={currentUserId}
               onBroadcast={handleBroadcast}
+              broadcastResetKey={broadcastResetKey}
             />
           </div>
 
@@ -714,7 +717,7 @@ function Dashboard() {
             </div>
             {broadcastProgress.done && (
               <button
-                onClick={() => setBroadcastProgress(null)}
+                onClick={() => { setBroadcastProgress(null); setBroadcastResetKey(k => k + 1); }}
                 style={{
                   width: '100%', height: '40px', background: '#588157', border: 'none',
                   borderRadius: '10px', fontSize: '10px', fontWeight: '600',
