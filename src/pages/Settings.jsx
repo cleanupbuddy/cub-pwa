@@ -739,27 +739,27 @@ function Settings({ onBack, profile, onProfileUpdate }) {
             </button>
           </div>
         </div>
-      </div>
 
-      {/* Card 9: Account */}
-      <div style={cardStyle}>
-        <div style={cardHeaderStyle}>Account</div>
-        <div style={cardBodyStyle}>
-          <p style={fieldNoteStyle}>
-            Permanently delete your account and all associated data. This cannot be undone.
-          </p>
-          <button
-            onClick={() => setShowDeleteAccount(true)}
-            style={{
-              width: '100%', padding: '12px', background: '#fff',
-              border: '0.5px solid #F4C2C2', borderRadius: '12px',
-              fontSize: '11px', fontWeight: '600', color: '#c0392b',
-              cursor: 'pointer', fontFamily: "'Outfit', sans-serif",
-              textTransform: 'uppercase', letterSpacing: '0.08em'
-            }}
-          >
-            Delete Account →
-          </button>
+        {/* Card 9: Account */}
+        <div style={cardStyle}>
+          <div style={cardHeaderStyle}>Account</div>
+          <div style={cardBodyStyle}>
+            <p style={fieldNoteStyle}>
+              Permanently delete your account and all associated data. This cannot be undone.
+            </p>
+            <button
+              onClick={() => setShowDeleteAccount(true)}
+              style={{
+                width: '100%', padding: '12px', background: '#fff',
+                border: '0.5px solid #F4C2C2', borderRadius: '12px',
+                fontSize: '11px', fontWeight: '600', color: '#c0392b',
+                cursor: 'pointer', fontFamily: "'Outfit', sans-serif",
+                textTransform: 'uppercase', letterSpacing: '0.08em'
+              }}
+            >
+              Delete Account →
+            </button>
+          </div>
         </div>
       </div>
 
