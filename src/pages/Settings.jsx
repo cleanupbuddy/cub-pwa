@@ -365,7 +365,7 @@ function Settings({ onBack, profile, onProfileUpdate }) {
       </div>
 
       {/* Content */}
-      <div style={{ padding: '20px 16px 140px', maxWidth: '600px', margin: '0 auto' }}>
+      <div style={{ padding: '20px 16px 160px', maxWidth: '600px', margin: '0 auto' }}>
 
         {/* Card 1: Practice profile */}
         <div style={cardStyle}>

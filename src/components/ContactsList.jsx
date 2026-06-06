@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { setUnreadBadge } from '../lib/badge';
 
-function ContactsList({ onSelectContact, clinicNumber, onArchiveChange, viewingArchived, refreshTrigger, currentUserId, onBroadcast, broadcastResetKey }) {
+function ContactsList({ onSelectContact, clinicNumber, onArchiveChange, viewingArchived, refreshTrigger, currentUserId, onBroadcast, broadcastResetKey, broadcastTipShown, onBroadcastTipDismiss }) {
   const [contacts, setContacts] = useState([]);
   const [contactMap, setContactMap] = useState({});
   const [loading, setLoading] = useState(true);
@@ -412,6 +412,37 @@ function ContactsList({ onSelectContact, clinicNumber, onArchiveChange, viewingA
           </div>
         )}
       </div>
+
+      {!broadcastTipShown && (
+        <div style={{
+          margin: '8px 12px',
+          background: '#EAF3DE',
+          border: '0.5px solid #C5D9B8',
+          borderRadius: '12px',
+          padding: '10px 12px',
+          display: 'flex',
+          alignItems: 'flex-start',
+          gap: '8px',
+          flexShrink: 0
+        }}>
+          <span style={{ fontSize: '16px', flexShrink: 0 }}>📢</span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: '12px', fontWeight: '600', color: '#2F3E46', marginBottom: '2px' }}>
+              New: Broadcast messaging
+            </div>
+            <div style={{ fontSize: '11px', color: '#588157', lineHeight: '1.5' }}>
+              Send a message to multiple patients at once. Tap + to try it.
+            </div>
+          </div>
+          <button
+            onClick={onBroadcastTipDismiss}
+            style={{
+              background: 'none', border: 'none', cursor: 'pointer',
+              color: '#9CAF88', fontSize: '16px', padding: 0, flexShrink: 0, lineHeight: 1
+            }}
+          >✕</button>
+        </div>
+      )}
 
       {/* Broadcast banner */}
       {broadcastMode && (

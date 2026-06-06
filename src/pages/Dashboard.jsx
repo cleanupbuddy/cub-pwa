@@ -186,6 +186,19 @@ function Dashboard() {
     setBroadcastConfirm({ phones, message });
   };
 
+  const handleBroadcastTipDismiss = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      await supabase.from('practitioners')
+        .update({ broadcast_tip_shown: true })
+        .eq('id', session.user.id);
+      loadProfile();
+    } catch (err) {
+      console.error('Broadcast tip dismiss error:', err);
+    }
+  };
+
   const executeBroadcast = async ({ phones, message }) => {
     setBroadcastConfirm(null);
     setBroadcastProgress({ total: phones.length, sent: 0, failed: 0, done: false });
