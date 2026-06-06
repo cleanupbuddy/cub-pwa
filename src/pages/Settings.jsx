@@ -772,7 +772,7 @@ function Settings({ onBack, profile, onProfileUpdate }) {
         background: '#fff',
         borderTop: '0.5px solid #E2E8E1',
         padding: '12px 16px',
-        paddingBottom: 'max(12px, env(safe-area-inset-bottom))',
+        paddingBottom: 'max(24px, env(safe-area-inset-bottom))',
         zIndex: 9,
       }}>
         <button
