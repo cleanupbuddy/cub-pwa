@@ -536,6 +536,8 @@ function Dashboard() {
               currentUserId={currentUserId}
               onBroadcast={handleBroadcast}
               broadcastResetKey={broadcastResetKey}
+              broadcastTipShown={profile?.broadcast_tip_shown}
+              onBroadcastTipDismiss={handleBroadcastTipDismiss}
             />
           </div>
 
@@ -593,6 +595,8 @@ function Dashboard() {
               currentUserId={currentUserId}
               onBroadcast={handleBroadcast}
               broadcastResetKey={broadcastResetKey}
+              broadcastTipShown={profile?.broadcast_tip_shown}
+              onBroadcastTipDismiss={handleBroadcastTipDismiss}
             />
           </div>
 
