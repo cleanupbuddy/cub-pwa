@@ -21,6 +21,8 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
   const [showContactMenu, setShowContactMenu] = useState(false);
   const [inputBarHeight, setInputBarHeight] = useState(80);
   const inputBarRef = useRef(null);
+  const [headerHeight, setHeaderHeight] = useState(60);
+  const headerRef = useRef(null);
 
   const isMobile = /iPhone|iPod|Android.*Mobile/.test(navigator.userAgent);
   const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
@@ -124,6 +126,12 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
   useEffect(() => {
     if (inputBarRef.current) {
       setInputBarHeight(inputBarRef.current.offsetHeight);
+    }
+  });
+
+  useEffect(() => {
+    if (headerRef.current) {
+      setHeaderHeight(headerRef.current.offsetHeight);
     }
   });
 
@@ -430,7 +438,18 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
     }}>
 
       {/* Chat header */}
-      <div style={{
+      <div ref={headerRef} style={{
+        ...(isMobile ? {
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 11,
+        } : {
+          position: 'sticky',
+          top: 0,
+          zIndex: 10,
+        }),
         padding: '12px 16px',
         borderBottom: '0.5px solid #E2E8E1',
         background: '#fff',
@@ -438,9 +457,6 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
         alignItems: 'center',
         gap: '10px',
         flexShrink: 0,
-        position: 'sticky',
-        top: 0,
-        zIndex: 10
       }}>
         <button
           onClick={onBack}
@@ -524,7 +540,7 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
         minHeight: 0,
         overflowY: 'auto',
         padding: '14px',
-        paddingTop: '14px',
+        paddingTop: isMobile ? headerHeight + 'px' : '14px',
         paddingBottom: isMobile ? inputBarHeight + 'px' : '20px',
         background: '#FDFDFD',
         display: 'flex',
