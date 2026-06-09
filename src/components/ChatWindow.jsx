@@ -19,6 +19,8 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
   const [deleteAgreed, setDeleteAgreed] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [showContactMenu, setShowContactMenu] = useState(false);
+  const [inputBarHeight, setInputBarHeight] = useState(80);
+  const inputBarRef = useRef(null);
 
   const isMobile = /iPhone|iPod|Android.*Mobile/.test(navigator.userAgent);
   const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
@@ -118,6 +120,12 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'auto' });
   }, [messages]);
+
+  useEffect(() => {
+    if (inputBarRef.current) {
+      setInputBarHeight(inputBarRef.current.offsetHeight);
+    }
+  });
 
   const saveName = async () => {
     setEditingName(false);
@@ -517,7 +525,7 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
         overflowY: 'auto',
         padding: '14px',
         paddingTop: '14px',
-        paddingBottom: '20px',
+        paddingBottom: isMobile ? inputBarHeight + 'px' : '20px',
         background: '#FDFDFD',
         display: 'flex',
         flexDirection: 'column',
@@ -620,11 +628,23 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
         })}
         <div ref={bottomRef} />
       </div>
-      {/* Quick actions */}
+      {/* Quick actions + input — fixed to bottom on mobile */}
+      <div ref={inputBarRef} style={{
+        ...(isMobile ? {
+          position: 'fixed',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          zIndex: 10,
+        } : {
+          flexShrink: 0,
+        }),
+        background: '#fff',
+        borderTop: '0.5px solid #E2E8E1'
+      }}>
       <div style={{
         padding: '8px 12px',
         background: '#fff',
-        borderTop: '0.5px solid #E2E8E1',
         display: 'flex',
         gap: '6px',
         flexWrap: 'wrap'
@@ -656,7 +676,6 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
         paddingLeft: '12px',
         paddingRight: '12px',
         paddingBottom: 'calc(16px + env(safe-area-inset-bottom))',
-        borderTop: '0.5px solid #E2E8E1',
         background: '#fff',
         display: 'flex',
         alignItems: 'flex-end',
@@ -717,6 +736,7 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
             <polygon points="22 2 15 22 11 13 2 9 22 2" />
           </svg>
         </button>
+      </div>
       </div>
       {showVoiceCall && (
         <VoiceCall
