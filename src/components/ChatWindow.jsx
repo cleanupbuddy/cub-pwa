@@ -377,6 +377,31 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
     }
   };
 
+  const markAsUnread = async () => {
+    try {
+      const { data: messages } = await supabase
+        .from('messages')
+        .select('id')
+        .eq('practitioner_id', currentUserId)
+        .eq('direction', 'inbound')
+        .or(`from_number.eq.${contact.phone},to_number.eq.${contact.phone}`)
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (messages && messages.length > 0) {
+        await supabase
+          .from('messages')
+          .update({ is_read: false })
+          .eq('id', messages[0].id);
+      }
+
+      setShowContactMenu(false);
+      if (onBack) onBack();
+    } catch (err) {
+      console.error('Mark as unread error:', err);
+    }
+  };
+
   const visibleMessages = messages.filter(
     msg =>
       msg.direction === 'system' ||
@@ -765,6 +790,17 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
           onClick={e => e.stopPropagation()}
           >
             <div style={{ width: '36px', height: '4px', background: '#E2E8E1', borderRadius: '2px', margin: '0 auto 20px' }} />
+            <button
+              onClick={markAsUnread}
+              style={{
+                width: '100%', padding: '14px 16px', background: 'none', border: 'none',
+                borderBottom: '0.5px solid #F1F5F9', textAlign: 'left',
+                fontSize: '14px', color: '#2F3E46', cursor: 'pointer',
+                fontFamily: "'Outfit', sans-serif", display: 'flex', alignItems: 'center', gap: '12px'
+              }}
+            >
+              🔵 Mark as unread
+            </button>
             <button
               onClick={() => { setShowContactMenu(false); archiveConversation(!isArchivedView); }}
               style={{
