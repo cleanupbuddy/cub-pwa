@@ -23,6 +23,7 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
   const inputBarRef = useRef(null);
   const [headerHeight, setHeaderHeight] = useState(60);
   const headerRef = useRef(null);
+  const [viewportOffset, setViewportOffset] = useState(0);
 
   const isMobile = /iPhone|iPod|Android.*Mobile/.test(navigator.userAgent);
   const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
@@ -134,6 +135,17 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
       setHeaderHeight(headerRef.current.offsetHeight);
     }
   });
+
+  useEffect(() => {
+    if (!isMobile || !window.visualViewport) return;
+    const handler = () => setViewportOffset(window.visualViewport.offsetTop);
+    window.visualViewport.addEventListener('scroll', handler);
+    window.visualViewport.addEventListener('resize', handler);
+    return () => {
+      window.visualViewport.removeEventListener('scroll', handler);
+      window.visualViewport.removeEventListener('resize', handler);
+    };
+  }, [isMobile]);
 
   const saveName = async () => {
     setEditingName(false);
@@ -441,7 +453,7 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
       <div ref={headerRef} style={{
         ...(isMobile ? {
           position: 'fixed',
-          top: 0,
+          top: viewportOffset + 'px',
           left: 0,
           right: 0,
           zIndex: 11,
