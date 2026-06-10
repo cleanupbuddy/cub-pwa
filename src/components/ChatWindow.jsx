@@ -125,16 +125,26 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
   }, [messages]);
 
   useEffect(() => {
-    if (inputBarRef.current) {
-      setInputBarHeight(inputBarRef.current.offsetHeight);
-    }
-  });
+    if (!inputBarRef.current) return;
+    const observer = new ResizeObserver(entries => {
+      for (const entry of entries) {
+        setInputBarHeight(entry.contentRect.height);
+      }
+    });
+    observer.observe(inputBarRef.current);
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
-    if (headerRef.current) {
-      setHeaderHeight(headerRef.current.offsetHeight);
-    }
-  });
+    if (!headerRef.current) return;
+    const observer = new ResizeObserver(entries => {
+      for (const entry of entries) {
+        setHeaderHeight(entry.contentRect.height);
+      }
+    });
+    observer.observe(headerRef.current);
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     if (!isMobile || !window.visualViewport) return;
