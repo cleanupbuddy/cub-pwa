@@ -19,7 +19,6 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
   const [deleteAgreed, setDeleteAgreed] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [showContactMenu, setShowContactMenu] = useState(false);
-  const [inputBarHeight, setInputBarHeight] = useState(80);
   const inputBarRef = useRef(null);
   const [headerHeight, setHeaderHeight] = useState(60);
   const headerRef = useRef(null);
@@ -123,17 +122,6 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'auto' });
   }, [messages]);
-
-  useEffect(() => {
-    if (!inputBarRef.current) return;
-    const observer = new ResizeObserver(entries => {
-      for (const entry of entries) {
-        setInputBarHeight(entry.contentRect.height);
-      }
-    });
-    observer.observe(inputBarRef.current);
-    return () => observer.disconnect();
-  }, []);
 
   useEffect(() => {
     if (!headerRef.current) return;
