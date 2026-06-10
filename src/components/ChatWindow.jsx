@@ -563,7 +563,7 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
         overflowY: 'auto',
         padding: '14px',
         paddingTop: isMobile ? headerHeight + 'px' : '14px',
-        paddingBottom: isMobile ? inputBarHeight + 'px' : '20px',
+        paddingBottom: '20px',
         background: '#FDFDFD',
         display: 'flex',
         flexDirection: 'column',
@@ -668,15 +668,7 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
       </div>
       {/* Quick actions + input — fixed to bottom on mobile */}
       <div ref={inputBarRef} style={{
-        ...(isMobile ? {
-          position: 'fixed',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          zIndex: 10,
-        } : {
-          flexShrink: 0,
-        }),
+        flexShrink: 0,
         background: '#fff',
         borderTop: '0.5px solid #E2E8E1'
       }}>
