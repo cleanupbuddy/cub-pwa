@@ -555,6 +555,7 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
         background: '#FDFDFD',
         display: 'flex',
         flexDirection: 'column',
+        justifyContent: 'flex-end',
         WebkitOverflowScrolling: 'touch'
       }}>
         {visibleMessages.map((msg, index) => {
