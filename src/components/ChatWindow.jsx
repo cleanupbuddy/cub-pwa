@@ -428,6 +428,27 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
     }
   };
 
+  const renderMessageText = (text) => {
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    const parts = text.split(urlRegex);
+    return parts.map((part, i) => {
+      if (urlRegex.test(part)) {
+        return (
+          <a
+            key={i}
+            href={part}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: 'inherit', textDecoration: 'underline', wordBreak: 'break-all' }}
+          >
+            {part}
+          </a>
+        );
+      }
+      return part;
+    });
+  };
+
   const visibleMessages = messages.filter(
     msg =>
       msg.direction === 'system' ||
@@ -633,7 +654,7 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
                     opacity: msg.status === 'sending' ? 0.85 : 1
                   }}
                 >
-                  {msg.body}
+                  {renderMessageText(msg.body)}
                 </div>
                 <div style={{
                   fontSize: '9px',
