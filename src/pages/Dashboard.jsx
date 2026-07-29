@@ -10,7 +10,7 @@ import OnboardingTour from '../components/OnboardingTour';
 import ReportIssue from '../components/ReportIssue';
 import ShareFeedback from '../components/ShareFeedback';
 
-function Dashboard() {
+function Dashboard({ onAdmin }) {
   const [profile, setProfile] = useState(() => {
     try {
       const saved = localStorage.getItem('cub_profile_cache');
@@ -493,6 +493,23 @@ function Dashboard() {
               </div>
 
               <div style={{ height: '0.5px', background: '#E2E8E1', margin: '4px 0' }} />
+
+              {profile?.user_email === 'jameson@juniperrmt.com' && (
+                <>
+                  <div
+                    onClick={(e) => { e.stopPropagation(); setShowStatusMenu(false); if (onAdmin) onAdmin(); }}
+                    style={{
+                      padding: '9px 12px', fontSize: '12px', color: '#588157',
+                      borderRadius: '8px', cursor: 'pointer', fontWeight: '600'
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.background = '#F7F6F2'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                  >
+                    Admin
+                  </div>
+                  <div style={{ height: '0.5px', background: '#E2E8E1', margin: '4px 0' }} />
+                </>
+              )}
 
               <div
                 onClick={(e) => { e.stopPropagation(); setShowStatusMenu(false); handleSignOut(); }}

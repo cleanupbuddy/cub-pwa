@@ -5,6 +5,7 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Paywall from './pages/Paywall';
 import Onboarding from './pages/Onboarding';
+import Admin from './pages/Admin';
 
 function App() {
   const [session, setSession] = useState(null);
@@ -13,6 +14,7 @@ function App() {
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [userEmail, setUserEmail] = useState('');
   const [paywallSkipped, setPaywallSkipped] = useState(false);
+  const [showAdmin, setShowAdmin] = useState(false);
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
   const [startupError, setStartupError] = useState('');
   const [hasResolvedAccess, setHasResolvedAccess] = useState(false);
@@ -282,7 +284,9 @@ function App() {
                 /> :
                 needsOnboarding ?
                   <Onboarding userEmail={userEmail} onComplete={() => setNeedsOnboarding(false)} /> :
-                  <Dashboard />
+                  showAdmin
+                    ? <Admin onBack={() => setShowAdmin(false)} />
+                    : <Dashboard onAdmin={() => setShowAdmin(true)} />
         } />
       </Routes>
     </BrowserRouter>
