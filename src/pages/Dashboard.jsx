@@ -79,6 +79,10 @@ function Dashboard() {
         .maybeSingle();
 
       setProfile(profile);
+      await supabase
+        .from('practitioners')
+        .update({ last_seen_at: new Date().toISOString() })
+        .eq('user_email', session.user.email);
       if (profile) {
         try {
           localStorage.setItem('cub_profile_cache', JSON.stringify({
