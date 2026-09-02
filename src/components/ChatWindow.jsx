@@ -6,7 +6,10 @@ import { VERCEL_URL } from '../lib/config';
 
 function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practitionerNumber, isArchivedView, onArchived, onRead, onBack, currentUserId }) {
   const [messages, setMessages] = useState([]);
-  const [newMessage, setNewMessage] = useState('');
+  const draftKey = `cub_draft_${contact?.phone}`;
+  const [newMessage, setNewMessage] = useState(() => {
+    try { return localStorage.getItem(draftKey) || ''; } catch { return ''; }
+  });
   const [sending, setSending] = useState(false);
   const [contactName, setContactName] = useState(contact.name || '');
   const bottomRef = useRef(null);
@@ -246,6 +249,7 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
 
     setMessages(prev => [...prev, optimisticMessage]);
     setNewMessage('');
+    try { localStorage.removeItem(draftKey); } catch {}
 
     try {
       const response = await fetch(`${VERCEL_URL}/api/send-sms`, {
@@ -729,6 +733,7 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
           value={newMessage}
           onChange={e => {
             setNewMessage(e.target.value);
+            try { localStorage.setItem(draftKey, e.target.value); } catch {}
             e.target.style.height = 'auto';
             e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
           }}
