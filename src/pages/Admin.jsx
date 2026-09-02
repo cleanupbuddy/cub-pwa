@@ -38,11 +38,22 @@ function Admin({ onBack }) {
   }, []);
 
   const fetchPractitioners = async () => {
-    const { data } = await supabase
-      .from('practitioners')
-      .select('id, therapist_name, user_email, profession_type, stripe_status, trial_status, clinic_number, last_seen_at')
-      .order('last_seen_at', { ascending: false });
-    setPractitioners(data || []);
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) {
+      setPractitioners([]);
+      return;
+    }
+
+    try {
+      const response = await fetch('https://cub-bridge-api.vercel.app/api/admin-users', {
+        headers: { Authorization: `Bearer ${session.access_token}` }
+      });
+      const result = await response.json();
+      setPractitioners(result.practitioners || []);
+    } catch (err) {
+      console.error('Failed to fetch practitioners:', err);
+      setPractitioners([]);
+    }
   };
 
   const fetchMessages = async () => {
@@ -162,7 +173,7 @@ function Admin({ onBack }) {
                   {practitioners.length}
                 </span>
               </div>
-              <div style={{ overflowX: 'auto' }}>
+              <div style={{ overflowX: 'auto', maxHeight: '320px', overflowY: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
                   <thead>
                     <tr style={{ background: '#F7F6F2' }}>
