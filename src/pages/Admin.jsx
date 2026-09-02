@@ -45,7 +45,7 @@ function Admin({ onBack }) {
     }
 
     try {
-      const response = await fetch('https://cub-bridge-api.vercel.app/api/admin-users', {
+      const response = await fetch('https://cub-bridge-api.vercel.app/api/health-check?type=admin-users', {
         headers: { Authorization: `Bearer ${session.access_token}` }
       });
       const result = await response.json();
