@@ -864,7 +864,10 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
                 fontFamily: "'Outfit', sans-serif", display: 'flex', alignItems: 'center', gap: '12px'
               }}
             >
-              🔵 Mark as unread
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="#588157">
+                <circle cx="12" cy="12" r="6"/>
+              </svg>
+              Mark as unread
             </button>
             <button
               onClick={() => { setShowContactMenu(false); archiveConversation(!isArchivedView); }}
@@ -875,17 +878,36 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
                 fontFamily: "'Outfit', sans-serif", display: 'flex', alignItems: 'center', gap: '12px'
               }}
             >
-              {isArchivedView ? '↩ Add back to list' : '📋 Remove from list'}
+              {isArchivedView ? (
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#588157" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="1 4 1 10 7 10"/>
+                  <path d="M3.51 15a9 9 0 1 0 .49-3.75"/>
+                </svg>
+              ) : (
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="21 8 21 21 3 21 3 8"/>
+                  <rect x="1" y="3" width="22" height="5"/>
+                  <line x1="10" y1="12" x2="14" y2="12"/>
+                </svg>
+              )}
+              {isArchivedView ? 'Add back to list' : 'Remove from list'}
             </button>
             <button
               onClick={() => { setShowContactMenu(false); setShowDeleteConfirm(true); setDeleteAgreed(false); }}
               style={{
                 width: '100%', padding: '14px 16px', background: 'none', border: 'none',
                 textAlign: 'left', fontSize: '14px', color: '#c0392b', cursor: 'pointer',
-                fontFamily: "'Outfit', sans-serif"
+                fontFamily: "'Outfit', sans-serif", display: 'flex', alignItems: 'center', gap: '12px'
               }}
             >
-              🗑 Delete permanently (PIPA)
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#c0392b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="3 6 5 6 21 6"/>
+                <path d="M19 6l-1 14H6L5 6"/>
+                <path d="M10 11v6"/>
+                <path d="M14 11v6"/>
+                <path d="M9 6V4h6v2"/>
+              </svg>
+              Delete permanently (PIPA)
             </button>
           </div>
         </div>
