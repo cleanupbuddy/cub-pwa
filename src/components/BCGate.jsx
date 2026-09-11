@@ -116,12 +116,17 @@ function BCGate({ userEmail, children }) {
   const exitToHome = async () => {
     console.log('exitToHome called');
     try {
-      await supabase.auth.signOut();
+      await Promise.race([
+        supabase.auth.signOut(),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('signOut timeout')), 3000))
+      ]);
       console.log('signOut completed');
-      window.location.href = '/';
-      console.log('redirect triggered');
     } catch (err) {
       console.error('exitToHome error:', err);
+    } finally {
+      localStorage.removeItem('cub_last_contact');
+      localStorage.removeItem('cub_profile_cache');
+      window.location.href = '/';
     }
   };
 
