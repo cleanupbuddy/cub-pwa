@@ -114,8 +114,15 @@ function BCGate({ userEmail, children }) {
   };
 
   const exitToHome = async () => {
-    await supabase.auth.signOut();
-    window.location.href = '/';
+    console.log('exitToHome called');
+    try {
+      await supabase.auth.signOut();
+      console.log('signOut completed');
+      window.location.href = '/';
+      console.log('redirect triggered');
+    } catch (err) {
+      console.error('exitToHome error:', err);
+    }
   };
 
   if (status === 'approved') {
