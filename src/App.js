@@ -5,6 +5,7 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Paywall from './pages/Paywall';
 import Onboarding from './pages/Onboarding';
+import BCGate from './components/BCGate';
 import Admin from './pages/Admin';
 
 function App() {
@@ -273,20 +274,23 @@ function App() {
         <Route path="/login" element={!session ? <Login /> : <Navigate to="/" />} />
         <Route path="/*" element={
           !session ? <Navigate to="/login" /> :
-            !hasResolvedAccess ? null :
-              !isSubscribed && !paywallSkipped ?
-                <Paywall
-                  userEmail={userEmail}
-                  onSkip={() => setPaywallSkipped(true)}
-                  onReturnToLogin={() => {
-                    window.location.href = '/login';
-                  }}
-                /> :
-                needsOnboarding ?
-                  <Onboarding userEmail={userEmail} onComplete={() => setNeedsOnboarding(false)} /> :
-                  showAdmin
-                    ? <Admin onBack={() => setShowAdmin(false)} />
-                    : <Dashboard onAdmin={() => setShowAdmin(true)} />
+            <BCGate userEmail={session.user.email}>
+              {!hasResolvedAccess ? null :
+                !isSubscribed && !paywallSkipped ?
+                  <Paywall
+                    userEmail={userEmail}
+                    onSkip={() => setPaywallSkipped(true)}
+                    onReturnToLogin={() => {
+                      window.location.href = '/login';
+                    }}
+                  /> :
+                  needsOnboarding ?
+                    <Onboarding userEmail={userEmail} onComplete={() => setNeedsOnboarding(false)} /> :
+                    showAdmin
+                      ? <Admin onBack={() => setShowAdmin(false)} />
+                      : <Dashboard onAdmin={() => setShowAdmin(true)} />
+              }
+            </BCGate>
         } />
       </Routes>
     </BrowserRouter>
