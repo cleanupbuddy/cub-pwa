@@ -94,7 +94,15 @@ function Login() {
 
       {/* Footer */}
       <p style={{ color: '#94A3B8', fontSize: '10px', marginTop: '32px', textAlign: 'center', lineHeight: '1.6' }}>
-        By signing in you agree to our Terms of Service.<br/>
+        By signing in you agree to our{' '}
+        <a
+          href="https://getcubsuite.com/terms-service"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ color: '#94A3B8', textDecoration: 'underline' }}
+        >
+          Terms of Service
+        </a>.<br/>
         Your patients trust you with their privacy. We've got yours covered.
       </p>
     </div>
