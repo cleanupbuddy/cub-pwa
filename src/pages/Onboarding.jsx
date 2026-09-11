@@ -18,6 +18,10 @@ function Onboarding({ onComplete, userEmail }) {
   const [error, setError] = useState('');
   const [otherProfession, setOtherProfession] = useState('');
   const [otherProfessionAbbreviation, setOtherProfessionAbbreviation] = useState('');
+  const [step0Answered, setStep0Answered] = useState(false);
+  const [isBC, setIsBC] = useState(null);
+  const [waitlistSubmitted, setWaitlistSubmitted] = useState(false);
+  const [waitlistSaving, setWaitlistSaving] = useState(false);
 
   const totalSteps = 3;
 
@@ -179,6 +183,27 @@ function Onboarding({ onComplete, userEmail }) {
     }
   };
 
+  const joinWaitlist = async () => {
+    setWaitlistSaving(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user?.email) {
+        await supabase.from('non_bc_waitlist').insert([{ email: session.user.email }]);
+      }
+      setWaitlistSubmitted(true);
+    } catch (err) {
+      console.error('Waitlist join error:', err);
+      setWaitlistSubmitted(true);
+    } finally {
+      setWaitlistSaving(false);
+    }
+  };
+
+  const exitToHome = async () => {
+    await supabase.auth.signOut();
+    window.location.href = '/';
+  };
+
   return (
     <div style={{
       minHeight: '100vh',
@@ -197,6 +222,113 @@ function Onboarding({ onComplete, userEmail }) {
         <text x="60" y="95" fontFamily="Georgia, serif" fontSize="36" fontWeight="700" fill="#526659" textAnchor="middle" letterSpacing="-0.5">cub</text>
       </svg>
 
+      {/* Step 0 — BC gate */}
+      {!step0Answered && (
+        <div style={{ width: '100%', maxWidth: '420px' }}>
+          {isBC === null && (
+            <div>
+              <h2 style={{ fontSize: '20px', fontWeight: '600', color: '#2F3E46', marginBottom: '6px' }}>
+                Quick question before we get started
+              </h2>
+              <p style={{ fontSize: '13px', color: '#94A3B8', marginBottom: '24px', lineHeight: '1.6' }}>
+                CUB is currently only available to registered health practitioners in British Columbia.
+              </p>
+              <p style={{ fontSize: '13px', color: '#2F3E46', marginBottom: '20px', lineHeight: '1.6', fontWeight: '600' }}>
+                Are you a registered health practitioner in BC?
+              </p>
+
+              <button
+                onClick={() => { setIsBC(true); setStep0Answered(true); }}
+                style={{
+                  width: '100%', padding: '14px', background: '#588157',
+                  border: 'none', borderRadius: '12px', fontSize: '12px',
+                  fontWeight: '600', color: 'white', cursor: 'pointer',
+                  fontFamily: "'Outfit', sans-serif", textTransform: 'uppercase',
+                  letterSpacing: '0.08em', marginBottom: '10px'
+                }}
+              >
+                Yes, I'm in BC
+              </button>
+
+              <button
+                onClick={() => setIsBC(false)}
+                style={{
+                  width: '100%', padding: '14px', background: '#fff',
+                  border: '0.5px solid #E2E8E1', borderRadius: '12px', fontSize: '12px',
+                  fontWeight: '600', color: '#2F3E46', cursor: 'pointer',
+                  fontFamily: "'Outfit', sans-serif", textTransform: 'uppercase',
+                  letterSpacing: '0.08em'
+                }}
+              >
+                No
+              </button>
+            </div>
+          )}
+
+          {isBC === false && !waitlistSubmitted && (
+            <div>
+              <h2 style={{ fontSize: '20px', fontWeight: '600', color: '#2F3E46', marginBottom: '6px' }}>
+                We're BC-only for now
+              </h2>
+              <p style={{ fontSize: '13px', color: '#94A3B8', marginBottom: '24px', lineHeight: '1.6' }}>
+                CUB is currently only available to registered health practitioners in British Columbia. Want to know when we expand to other provinces?
+              </p>
+
+              <button
+                onClick={joinWaitlist}
+                disabled={waitlistSaving}
+                style={{
+                  width: '100%', padding: '14px', background: '#588157',
+                  border: 'none', borderRadius: '12px', fontSize: '12px',
+                  fontWeight: '600', color: 'white', cursor: waitlistSaving ? 'not-allowed' : 'pointer',
+                  fontFamily: "'Outfit', sans-serif", textTransform: 'uppercase',
+                  letterSpacing: '0.08em', marginBottom: '10px'
+                }}
+              >
+                {waitlistSaving ? 'Saving...' : 'Notify me'}
+              </button>
+
+              <button
+                onClick={exitToHome}
+                style={{
+                  width: '100%', background: 'none', border: 'none',
+                  color: '#C5CAD2', fontSize: '11px', cursor: 'pointer',
+                  fontFamily: "'Outfit', sans-serif"
+                }}
+              >
+                Not now
+              </button>
+            </div>
+          )}
+
+          {isBC === false && waitlistSubmitted && (
+            <div>
+              <h2 style={{ fontSize: '20px', fontWeight: '600', color: '#2F3E46', marginBottom: '6px' }}>
+                You're on the list!
+              </h2>
+              <p style={{ fontSize: '13px', color: '#94A3B8', marginBottom: '24px', lineHeight: '1.6' }}>
+                We'll email you when CUB expands to your province.
+              </p>
+
+              <button
+                onClick={exitToHome}
+                style={{
+                  width: '100%', padding: '14px', background: '#588157',
+                  border: 'none', borderRadius: '12px', fontSize: '12px',
+                  fontWeight: '600', color: 'white', cursor: 'pointer',
+                  fontFamily: "'Outfit', sans-serif", textTransform: 'uppercase',
+                  letterSpacing: '0.08em'
+                }}
+              >
+                Done
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {step0Answered && (
+        <>
       {/* Progress bar */}
       <div style={{ width: '100%', maxWidth: '420px', marginBottom: '32px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
@@ -437,6 +569,8 @@ function Onboarding({ onComplete, userEmail }) {
           </div>
         )}
       </div>
+        </>
+      )}
     </div>
   );
 }
