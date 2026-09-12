@@ -111,7 +111,14 @@ function Dashboard({ onAdmin }) {
       }
 
       if (profile?.clinic_number && !profile?.tour_completed) {
-        setShowTour(true);
+        const wantsTour = window.sessionStorage.getItem('cub_wants_tour');
+        if (wantsTour === 'true') {
+          setShowTour(true);
+        } else if (wantsTour === 'false') {
+          // User explicitly skipped — mark tour_completed so it never auto-shows again
+          supabase.from('practitioners').update({ tour_completed: true }).eq('user_email', profile.user_email);
+        }
+        window.sessionStorage.removeItem('cub_wants_tour');
       }
 
       if (profile?.clinic_number && profile?.tour_completed && !profile?.notification_prompt_shown) {
@@ -466,6 +473,18 @@ function Dashboard({ onAdmin }) {
                 onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
               >
                 Help & FAQ
+              </div>
+
+              <div
+                onClick={(e) => { e.stopPropagation(); setShowStatusMenu(false); setShowTour(true); }}
+                style={{
+                  padding: '9px 12px', fontSize: '12px', color: '#2F3E46',
+                  borderRadius: '8px', cursor: 'pointer'
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = '#F7F6F2'}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+              >
+                Take the tour
               </div>
 
               <div

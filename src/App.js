@@ -285,7 +285,10 @@ function App() {
                     }}
                   /> :
                   needsOnboarding ?
-                    <Onboarding userEmail={userEmail} onComplete={() => setNeedsOnboarding(false)} /> :
+                    <Onboarding userEmail={userEmail} onComplete={(wantsTour) => {
+                      setNeedsOnboarding(false);
+                      window.sessionStorage.setItem('cub_wants_tour', wantsTour ? 'true' : 'false');
+                    }} /> :
                     showAdmin
                       ? <Admin onBack={() => setShowAdmin(false)} />
                       : <Dashboard onAdmin={() => setShowAdmin(true)} />

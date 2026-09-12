@@ -168,7 +168,7 @@ function Onboarding({ onComplete, userEmail }) {
         await supabase.from('practitioners')
           .update({ clinic_number: selectedNumber })
           .eq('user_email', session.user.email);
-        onComplete();
+        setStep(4);
       } else {
         setError('Could not claim that number. Please try another.');
       }
@@ -198,23 +198,25 @@ function Onboarding({ onComplete, userEmail }) {
       </svg>
 
       {/* Progress bar */}
-      <div style={{ width: '100%', maxWidth: '420px', marginBottom: '32px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-          <span style={{ fontSize: '10px', color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-            Getting set up
-          </span>
-          <span style={{ fontSize: '10px', color: '#94A3B8' }}>
-            {step} of {totalSteps}
-          </span>
+      {step <= totalSteps && (
+        <div style={{ width: '100%', maxWidth: '420px', marginBottom: '32px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+            <span style={{ fontSize: '10px', color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+              Getting set up
+            </span>
+            <span style={{ fontSize: '10px', color: '#94A3B8' }}>
+              {step} of {totalSteps}
+            </span>
+          </div>
+          <div style={{ background: '#E2E8E1', borderRadius: '6px', height: '4px' }}>
+            <div style={{
+              background: '#588157', height: '4px', borderRadius: '6px',
+              width: `${(step / totalSteps) * 100}%`,
+              transition: 'width 0.3s ease'
+            }} />
+          </div>
         </div>
-        <div style={{ background: '#E2E8E1', borderRadius: '6px', height: '4px' }}>
-          <div style={{
-            background: '#588157', height: '4px', borderRadius: '6px',
-            width: `${(step / totalSteps) * 100}%`,
-            transition: 'width 0.3s ease'
-          }} />
-        </div>
-      </div>
+      )}
 
       {/* Step content */}
       <div style={{ width: '100%', maxWidth: '420px' }}>
@@ -434,6 +436,48 @@ function Onboarding({ onComplete, userEmail }) {
                 {claiming ? 'Claiming...' : 'Claim This Number →'}
               </button>
             )}
+          </div>
+        )}
+
+        {/* Step 4 — Tour opt-in */}
+        {step === 4 && (
+          <div>
+            <h2 style={{ fontSize: '20px', fontWeight: '600', color: '#2F3E46', marginBottom: '6px' }}>
+              You're all set!
+            </h2>
+            <p style={{ fontSize: '13px', color: '#94A3B8', marginBottom: '24px', lineHeight: '1.6' }}>
+              Your clinic number is ready to use. Want a quick walkthrough of CUB's features — quick reply chips, auto-reply, voice bridge, and more? Takes about 2 minutes.
+            </p>
+
+            <button
+              onClick={() => onComplete(true)}
+              style={{
+                width: '100%', padding: '14px', background: '#588157',
+                border: 'none', borderRadius: '12px', fontSize: '12px',
+                fontWeight: '600', color: 'white', cursor: 'pointer',
+                fontFamily: "'Outfit', sans-serif", textTransform: 'uppercase',
+                letterSpacing: '0.08em', marginBottom: '10px'
+              }}
+            >
+              Take the quick tour
+            </button>
+
+            <button
+              onClick={() => onComplete(false)}
+              style={{
+                width: '100%', padding: '14px', background: '#fff',
+                border: '0.5px solid #E2E8E1', borderRadius: '12px', fontSize: '12px',
+                fontWeight: '600', color: '#2F3E46', cursor: 'pointer',
+                fontFamily: "'Outfit', sans-serif", textTransform: 'uppercase',
+                letterSpacing: '0.08em', marginBottom: '16px'
+              }}
+            >
+              Skip, I'll explore on my own
+            </button>
+
+            <p style={{ fontSize: '11px', color: '#C5CAD2', textAlign: 'center' }}>
+              You can always find the tour later in the menu under Help.
+            </p>
           </div>
         )}
       </div>
