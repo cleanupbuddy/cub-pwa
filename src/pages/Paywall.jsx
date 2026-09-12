@@ -70,7 +70,7 @@ function Paywall({ userEmail, onSkip, onReturnToLogin }) {
             Founding 50 Plan
           </div>
           <div style={{ fontSize: '11px', color: '#94A3B8', marginBottom: '12px' }}>
-            <span style={{ color: '#588157', fontWeight: '600' }}>$14.99</span>/month — locked in for life
+            <span style={{ color: '#588157', fontWeight: '600' }}>$14.99</span>/month + GST — locked in for life
           </div>
           <button
             onClick={() => handleSubscribe('founding')}
@@ -96,7 +96,7 @@ function Paywall({ userEmail, onSkip, onReturnToLogin }) {
             Standard Plan
           </div>
           <div style={{ fontSize: '11px', color: '#94A3B8', marginBottom: '12px' }}>
-            <span style={{ color: '#2F3E46', fontWeight: '600' }}>$29.00</span>/month
+            <span style={{ color: '#2F3E46', fontWeight: '600' }}>$29.00</span>/month + GST
           </div>
           <button
             onClick={() => handleSubscribe('standard')}
