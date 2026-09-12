@@ -10,10 +10,10 @@ const steps = [
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#588157" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></svg>
         </div>
         <h2 style={{ fontSize: '20px', fontWeight: '500', color: '#2F3E46', marginBottom: '12px' }}>Welcome to CUB Line.</h2>
-        <p style={{ fontSize: '13px', color: '#2F3E46', lineHeight: '1.7', marginBottom: '12px' }}>I built this because I got tired of patients having my personal number. As a solo practitioner, I wanted boundaries without barriers — a way to stay professional at work, and actually off when I'm off.</p>
-        <p style={{ fontSize: '13px', color: '#2F3E46', lineHeight: '1.7', marginBottom: '12px' }}>CUB gives you a dedicated BC clinic line that lives right in your browser — no second phone, no second SIM, no second life. Private, encrypted, and built for practitioners who actually want to switch off.</p>
-        <p style={{ fontSize: '13px', color: '#2F3E46', lineHeight: '1.7', marginBottom: '16px' }}>This guide will get you set up in minutes.</p>
-        <p style={{ fontSize: '12px', color: '#588157', fontWeight: '500' }}>— Jamie, Founder of CUB Line</p>
+        <p style={{ fontSize: '13px', color: '#2F3E46', lineHeight: '1.7', marginBottom: '12px' }}>I got tired of patients having my personal number. Weekend texts, evening calls — the boundary between 'at work' and 'off the clock' kept disappearing. So I built the boundary myself.</p>
+        <p style={{ fontSize: '13px', color: '#2F3E46', lineHeight: '1.7', marginBottom: '12px' }}>CUB gives you a dedicated BC clinic line that lives right in your browser — no second phone, no second SIM, no second life to manage. Private, encrypted, and built so 'off duty' can actually mean something again.</p>
+        <p style={{ fontSize: '13px', color: '#2F3E46', lineHeight: '1.7', marginBottom: '16px' }}>Let's get you set up — it only takes a few minutes.</p>
+        <p style={{ fontSize: '12px', color: '#588157', fontWeight: '500' }}>— Jamie, RMT & Founder of CUB Line</p>
       </div>
     )
   },
