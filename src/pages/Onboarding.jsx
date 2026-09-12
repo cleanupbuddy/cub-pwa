@@ -228,7 +228,7 @@ function Onboarding({ onComplete, userEmail }) {
               Tell us about yourself
             </h2>
             <p style={{ fontSize: '13px', color: '#94A3B8', marginBottom: '24px', lineHeight: '1.6' }}>
-              This helps personalize your clinic line and messages to patients.
+              This helps personalize your clinic line — your name and clinic name may appear in message templates you send to patients, like your intro message.
             </p>
 
             <label style={labelStyle}>Your name</label>
