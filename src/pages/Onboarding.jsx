@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { VERCEL_URL } from '../lib/config';
 import { PROFESSIONS } from '../constants/professions';
@@ -18,6 +18,18 @@ function Onboarding({ onComplete, userEmail }) {
   const [error, setError] = useState('');
   const [otherProfession, setOtherProfession] = useState('');
   const [otherProfessionAbbreviation, setOtherProfessionAbbreviation] = useState('');
+  const [verificationStep, setVerificationStep] = useState('enter'); // 'enter' | 'code' | 'verified'
+  const [verificationCode, setVerificationCode] = useState('');
+  const [sendingCode, setSendingCode] = useState(false);
+  const [verifyingCode, setVerifyingCode] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const resendIntervalRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      if (resendIntervalRef.current) clearInterval(resendIntervalRef.current);
+    };
+  }, []);
 
   const totalSteps = 3;
 
@@ -93,36 +105,78 @@ function Onboarding({ onComplete, userEmail }) {
     }
   };
 
-  const saveStep2 = async () => {
-    if (!practitionerPhone || practitionerPhone === '+1') {
-      setError('Please enter your personal mobile number.');
+  const sendVerificationCode = async () => {
+    const cleaned = practitionerPhone.replace(/\D/g, '');
+    const strippedLeading1 = cleaned.startsWith('1') ? cleaned.slice(1) : cleaned;
+    if (strippedLeading1.length !== 10) {
+      setError('Please enter a valid 10-digit phone number.');
       return;
     }
     setError('');
-    setSaving(true);
+    setSendingCode(true);
+    try {
+      const response = await fetch('https://cub-bridge-api.vercel.app/api/verify-phone?action=send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phoneNumber: practitionerPhone })
+      });
+      const data = await response.json();
+      if (data.success) {
+        setVerificationStep('code');
+        setResendCooldown(60);
+        if (resendIntervalRef.current) clearInterval(resendIntervalRef.current);
+        resendIntervalRef.current = setInterval(() => {
+          setResendCooldown(prev => {
+            if (prev <= 1) { clearInterval(resendIntervalRef.current); return 0; }
+            return prev - 1;
+          });
+        }, 1000);
+      } else {
+        setError(data.error || 'Could not send verification code. Please try again.');
+      }
+    } catch (err) {
+      console.error('Send code error:', err);
+      setError('Could not send verification code. Please try again.');
+    } finally {
+      setSendingCode(false);
+    }
+  };
+
+  const verifyAndSave = async () => {
+    if (!/^\d{6}$/.test(verificationCode)) {
+      setError('Please enter the 6-digit code.');
+      return;
+    }
+    setError('');
+    setVerifyingCode(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         setError('Session expired. Please sign in again.');
         return;
       }
-      const cleaned = practitionerPhone.replace(/\D/g, '');
-      const strippedLeading1 = cleaned.startsWith('1') ? cleaned.slice(1) : cleaned;
-      if (strippedLeading1.length !== 10) {
-        setError('Please enter a valid 10-digit phone number.');
-        return;
+      const response = await fetch('https://cub-bridge-api.vercel.app/api/verify-phone?action=verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phoneNumber: practitionerPhone, code: verificationCode })
+      });
+      const data = await response.json();
+      if (data.success && data.verified) {
+        const cleaned = practitionerPhone.replace(/\D/g, '');
+        const formatted = cleaned.startsWith('1') ? `+${cleaned}` : `+1${cleaned}`;
+        const { error: updateError } = await supabase.from('practitioners').update({
+          practitioner_phone: formatted
+        }).eq('user_email', session.user.email);
+        if (updateError) throw updateError;
+        setStep(3);
+      } else {
+        setError(data.error || 'Incorrect code. Please try again.');
       }
-      const formatted = cleaned.startsWith('1') ? `+${cleaned}` : `+1${cleaned}`;
-      const { error } = await supabase.from('practitioners').update({
-        practitioner_phone: formatted
-      }).eq('user_email', session.user.email);
-      if (error) throw error;
-      setStep(3);
     } catch (err) {
-      console.error('Step 2 save error:', err);
+      console.error('Verify error:', err);
       setError('Something went wrong. Please try again.');
     } finally {
-      setSaving(false);
+      setVerifyingCode(false);
     }
   };
 
@@ -309,52 +363,116 @@ function Onboarding({ onComplete, userEmail }) {
             <h2 style={{ fontSize: '20px', fontWeight: '600', color: '#2F3E46', marginBottom: '6px' }}>
               Your personal mobile
             </h2>
-            <p style={{ fontSize: '13px', color: '#94A3B8', marginBottom: '24px', lineHeight: '1.6' }}>
-              When you call a patient through CUB, your phone rings first. Your personal number stays completely hidden — patients only ever see your clinic number.
-            </p>
 
-            <label style={labelStyle}>Personal mobile number</label>
-            <input
-              type="tel"
-              value={practitionerPhone}
-              onChange={e => setPractitionerPhone(e.target.value)}
-              placeholder="+1 778 555 0123"
-              style={inputStyle}
-            />
+            {verificationStep === 'enter' && (
+              <>
+                <p style={{ fontSize: '13px', color: '#94A3B8', marginBottom: '24px', lineHeight: '1.6' }}>
+                  When you call a patient through CUB, your phone rings first. Your personal number stays completely hidden — patients only ever see your clinic number.
+                </p>
 
-            <div style={{
-              background: '#F0F4EE', borderRadius: '10px', padding: '12px 14px',
-              marginBottom: '20px', fontSize: '12px', color: '#588157', lineHeight: '1.6'
-            }}>
-              🔒 Your personal number is never shared with patients or stored outside your secure account.
-            </div>
+                <label style={labelStyle}>Personal mobile number</label>
+                <input
+                  type="tel"
+                  value={practitionerPhone}
+                  onChange={e => setPractitionerPhone(e.target.value)}
+                  placeholder="+1 778 555 0123"
+                  style={inputStyle}
+                />
 
-            {error && <p style={{ color: '#E57373', fontSize: '12px', marginBottom: '12px' }}>{error}</p>}
+                <div style={{
+                  background: '#F0F4EE', borderRadius: '10px', padding: '12px 14px',
+                  marginBottom: '20px', fontSize: '12px', color: '#588157', lineHeight: '1.6'
+                }}>
+                  🔒 Your personal number is never shared with patients or stored outside your secure account.
+                </div>
 
-            <button
-              onClick={saveStep2}
-              disabled={saving}
-              style={{
-                width: '100%', padding: '14px', background: '#588157',
-                border: 'none', borderRadius: '12px', fontSize: '12px',
-                fontWeight: '600', color: 'white', cursor: saving ? 'not-allowed' : 'pointer',
-                fontFamily: "'Outfit', sans-serif", textTransform: 'uppercase',
-                letterSpacing: '0.08em', marginBottom: '10px'
-              }}
-            >
-              {saving ? 'Saving...' : 'Continue →'}
-            </button>
+                {error && <p style={{ color: '#E57373', fontSize: '12px', marginBottom: '12px' }}>{error}</p>}
 
-            <button
-              onClick={() => setStep(3)}
-              style={{
-                width: '100%', background: 'none', border: 'none',
-                color: '#C5CAD2', fontSize: '11px', cursor: 'pointer',
-                fontFamily: "'Outfit', sans-serif"
-              }}
-            >
-              Skip for now
-            </button>
+                <button
+                  onClick={sendVerificationCode}
+                  disabled={sendingCode}
+                  style={{
+                    width: '100%', padding: '14px', background: '#588157',
+                    border: 'none', borderRadius: '12px', fontSize: '12px',
+                    fontWeight: '600', color: 'white', cursor: sendingCode ? 'not-allowed' : 'pointer',
+                    fontFamily: "'Outfit', sans-serif", textTransform: 'uppercase',
+                    letterSpacing: '0.08em', marginBottom: '10px'
+                  }}
+                >
+                  {sendingCode ? 'Sending...' : 'Send verification code'}
+                </button>
+
+                <button
+                  onClick={() => setStep(3)}
+                  style={{
+                    width: '100%', background: 'none', border: 'none',
+                    color: '#C5CAD2', fontSize: '11px', cursor: 'pointer',
+                    fontFamily: "'Outfit', sans-serif"
+                  }}
+                >
+                  Skip for now
+                </button>
+              </>
+            )}
+
+            {verificationStep === 'code' && (
+              <>
+                <p style={{ fontSize: '13px', color: '#94A3B8', marginBottom: '24px', lineHeight: '1.6' }}>
+                  We sent a 6-digit code to <strong style={{ color: '#2F3E46' }}>{practitionerPhone}</strong>. Enter it below to verify your number.
+                </p>
+
+                <label style={labelStyle}>Verification code</label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={6}
+                  value={verificationCode}
+                  onChange={e => setVerificationCode(e.target.value.replace(/\D/g, ''))}
+                  placeholder="123456"
+                  style={inputStyle}
+                />
+
+                {error && <p style={{ color: '#E57373', fontSize: '12px', marginBottom: '12px' }}>{error}</p>}
+
+                <button
+                  onClick={verifyAndSave}
+                  disabled={verifyingCode}
+                  style={{
+                    width: '100%', padding: '14px', background: '#588157',
+                    border: 'none', borderRadius: '12px', fontSize: '12px',
+                    fontWeight: '600', color: 'white', cursor: verifyingCode ? 'not-allowed' : 'pointer',
+                    fontFamily: "'Outfit', sans-serif", textTransform: 'uppercase',
+                    letterSpacing: '0.08em', marginBottom: '10px'
+                  }}
+                >
+                  {verifyingCode ? 'Verifying...' : 'Verify'}
+                </button>
+
+                <button
+                  onClick={sendVerificationCode}
+                  disabled={resendCooldown > 0 || sendingCode}
+                  style={{
+                    width: '100%', background: 'none', border: 'none',
+                    color: resendCooldown > 0 ? '#C5CAD2' : '#588157', fontSize: '11px',
+                    cursor: resendCooldown > 0 ? 'not-allowed' : 'pointer',
+                    fontFamily: "'Outfit', sans-serif", marginBottom: '10px'
+                  }}
+                >
+                  {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend code'}
+                </button>
+
+                <button
+                  onClick={() => { setVerificationStep('enter'); setVerificationCode(''); setError(''); }}
+                  style={{
+                    width: '100%', background: 'none', border: 'none',
+                    color: '#C5CAD2', fontSize: '11px', cursor: 'pointer',
+                    fontFamily: "'Outfit', sans-serif"
+                  }}
+                >
+                  Change number
+                </button>
+              </>
+            )}
           </div>
         )}
 
