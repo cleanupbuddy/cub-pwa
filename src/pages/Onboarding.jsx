@@ -115,7 +115,7 @@ function Onboarding({ onComplete, userEmail }) {
     setError('');
     setSendingCode(true);
     try {
-      const response = await fetch('https://cub-bridge-api.vercel.app/api/verify-phone?action=send', {
+      const response = await fetch('https://cub-bridge-api.vercel.app/api/health-check?type=verify-send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phoneNumber: practitionerPhone })
@@ -155,7 +155,7 @@ function Onboarding({ onComplete, userEmail }) {
         setError('Session expired. Please sign in again.');
         return;
       }
-      const response = await fetch('https://cub-bridge-api.vercel.app/api/verify-phone?action=verify', {
+      const response = await fetch('https://cub-bridge-api.vercel.app/api/health-check?type=verify-check', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phoneNumber: practitionerPhone, code: verificationCode })
