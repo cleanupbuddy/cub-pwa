@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { VERCEL_URL } from '../lib/config';
 import { PROFESSIONS } from '../constants/professions';
+import { formatPhoneE164, cleanPhoneDigits } from '../lib/phone';
 
 function Onboarding({ onComplete, userEmail }) {
   const [step, setStep] = useState(1);
@@ -106,9 +107,8 @@ function Onboarding({ onComplete, userEmail }) {
   };
 
   const sendVerificationCode = async () => {
-    const cleaned = practitionerPhone.replace(/\D/g, '');
-    const strippedLeading1 = cleaned.startsWith('1') ? cleaned.slice(1) : cleaned;
-    if (strippedLeading1.length !== 10) {
+    const formatted = formatPhoneE164(practitionerPhone);
+    if (!formatted) {
       setError('Please enter a valid 10-digit phone number.');
       return;
     }
@@ -118,7 +118,7 @@ function Onboarding({ onComplete, userEmail }) {
       const response = await fetch('https://cub-bridge-api.vercel.app/api/health-check?type=verify-send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phoneNumber: practitionerPhone })
+        body: JSON.stringify({ phoneNumber: formatted })
       });
       const data = await response.json();
       if (data.success) {
@@ -147,6 +147,11 @@ function Onboarding({ onComplete, userEmail }) {
       setError('Please enter the 6-digit code.');
       return;
     }
+    const formatted = formatPhoneE164(practitionerPhone);
+    if (!formatted) {
+      setError('Please enter a valid 10-digit phone number.');
+      return;
+    }
     setError('');
     setVerifyingCode(true);
     try {
@@ -158,12 +163,10 @@ function Onboarding({ onComplete, userEmail }) {
       const response = await fetch('https://cub-bridge-api.vercel.app/api/health-check?type=verify-check', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phoneNumber: practitionerPhone, code: verificationCode })
+        body: JSON.stringify({ phoneNumber: formatted, code: verificationCode })
       });
       const data = await response.json();
       if (data.success && data.verified) {
-        const cleaned = practitionerPhone.replace(/\D/g, '');
-        const formatted = cleaned.startsWith('1') ? `+${cleaned}` : `+1${cleaned}`;
         const { error: updateError } = await supabase.from('practitioners').update({
           practitioner_phone: formatted
         }).eq('user_email', session.user.email);
@@ -367,14 +370,19 @@ function Onboarding({ onComplete, userEmail }) {
             {verificationStep === 'enter' && (
               <>
                 <p style={{ fontSize: '13px', color: '#94A3B8', marginBottom: '24px', lineHeight: '1.6' }}>
-                  When you call a patient through CUB, your phone rings first. Your personal number stays completely hidden — patients only ever see your clinic number.
+                  This number is used specifically for voice bridge calls — when you call a patient through CUB, your phone rings first, then connects you. Your personal number stays completely hidden; patients only ever see your clinic number.
                 </p>
 
                 <label style={labelStyle}>Personal mobile number</label>
                 <input
                   type="tel"
                   value={practitionerPhone}
-                  onChange={e => setPractitionerPhone(e.target.value)}
+                  onChange={e => {
+                    let digits = cleanPhoneDigits(e.target.value);
+                    if (digits.startsWith('1') && digits.length === 11) digits = digits.slice(1);
+                    setPractitionerPhone(digits ? `+1 ${digits}` : '+1 ');
+                  }}
+                  onFocus={() => { if (!practitionerPhone) setPractitionerPhone('+1 '); }}
                   placeholder="+1 778 555 0123"
                   style={inputStyle}
                 />
@@ -410,7 +418,7 @@ function Onboarding({ onComplete, userEmail }) {
                     fontFamily: "'Outfit', sans-serif"
                   }}
                 >
-                  Skip for now
+                  Skip for now — I'll only use text messaging
                 </button>
               </>
             )}
