@@ -19,6 +19,7 @@ function App() {
   const [startupError, setStartupError] = useState('');
   const [hasResolvedAccess, setHasResolvedAccess] = useState(false);
   const [confirmingSubscription, setConfirmingSubscription] = useState(false);
+  const [subscriptionConfirmed, setSubscriptionConfirmed] = useState(false);
   const isResolvingRef = useRef(false);
   const isSubscribedRef = useRef(false);
 
@@ -145,7 +146,10 @@ function App() {
       const pollInterval = setInterval(async () => {
         attempts++;
         await resolveAppAccess();
-        if (isSubscribedRef.current || attempts >= maxAttempts) {
+        if (isSubscribedRef.current) {
+          clearInterval(pollInterval);
+          setSubscriptionConfirmed(true);
+        } else if (attempts >= maxAttempts) {
           clearInterval(pollInterval);
           setConfirmingSubscription(false);
         }
@@ -231,9 +235,21 @@ function App() {
       <h2 style={{ color: '#EAF3DE', fontSize: '20px', fontWeight: '600', marginBottom: '8px' }}>
         You're in!
       </h2>
-      <p style={{ color: '#9CAF88', fontSize: '13px', textAlign: 'center' }}>
-        Confirming your subscription...
+      <p style={{ color: '#9CAF88', fontSize: '13px', textAlign: 'center', marginBottom: subscriptionConfirmed ? '24px' : '0' }}>
+        {subscriptionConfirmed ? "Your subscription is confirmed. Let's get your clinic line set up." : 'Confirming your subscription...'}
       </p>
+      {subscriptionConfirmed && (
+        <button
+          onClick={() => { setConfirmingSubscription(false); setSubscriptionConfirmed(false); }}
+          style={{
+            padding: '13px 24px', background: '#588157', border: 'none', borderRadius: '12px',
+            fontSize: '12px', fontWeight: '600', color: 'white', cursor: 'pointer',
+            fontFamily: "'Outfit', sans-serif", textTransform: 'uppercase', letterSpacing: '0.08em'
+          }}
+        >
+          Continue to setup →
+        </button>
+      )}
     </div>
   );
 
