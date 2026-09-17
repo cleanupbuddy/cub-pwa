@@ -4,10 +4,11 @@ import { VERCEL_URL } from '../lib/config';
 
 import { supabase } from '../lib/supabase';
 
-function VoiceCall({ contact, clinicNumber, practitionerNumber, therapistName, clinicName, onClose }) {
+function VoiceCall({ contact, clinicNumber, practitionerNumber, therapistName, clinicName, onClose, onOpenSettings }) {
   const [status, setStatus] = useState('idle');
   const [notifySent, setNotifySent] = useState(false);
   const [countdown, setCountdown] = useState(null);
+  const [errorReason, setErrorReason] = useState(null);
 
   useEffect(() => {
     if (notifySent) {
@@ -53,6 +54,7 @@ function VoiceCall({ contact, clinicNumber, practitionerNumber, therapistName, c
   const makeCall = async () => {
     if (!practitionerNumber) {
       setStatus('error');
+      setErrorReason('no-number');
       return;
     }
 
@@ -64,6 +66,7 @@ function VoiceCall({ contact, clinicNumber, practitionerNumber, therapistName, c
       if (!session?.access_token) {
         console.error('No auth token — cannot make call');
         setStatus('error');
+        setErrorReason('auth');
         return;
       }
 
@@ -97,6 +100,7 @@ function VoiceCall({ contact, clinicNumber, practitionerNumber, therapistName, c
     } catch (err) {
       console.error('Call error:', err);
       setStatus('error');
+      setErrorReason('call-failed');
     }
   };
 
@@ -191,7 +195,24 @@ function VoiceCall({ contact, clinicNumber, practitionerNumber, therapistName, c
             lineHeight: '1.5',
             border: '0.5px solid #F3D1D1'
           }}>
-            ⚠️ Call failed. Make sure your personal mobile is saved in Settings.
+            {errorReason === 'no-number' && (
+              <>
+                ⚠️ Call failed. Your personal mobile number isn't set up yet.
+                {onOpenSettings && (
+                  <div style={{ marginTop: '8px' }}>
+                    <span
+                      onClick={() => { onOpenSettings(); if (onClose) onClose(); }}
+                      style={{ color: '#588157', cursor: 'pointer', textDecoration: 'underline', fontWeight: '600' }}
+                    >
+                      Add it in Settings →
+                    </span>
+                  </div>
+                )}
+              </>
+            )}
+            {errorReason === 'auth' && '⚠️ Session expired. Please sign in again.'}
+            {errorReason === 'call-failed' && '⚠️ Call failed. Please try again in a moment.'}
+            {!errorReason && '⚠️ Call failed. Please try again.'}
           </div>
         )}
 

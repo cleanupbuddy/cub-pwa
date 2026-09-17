@@ -608,6 +608,7 @@ function Dashboard({ onAdmin }) {
                   setSelectedContact(null);
                   setTimeout(() => setViewingArchived(false), 300);
                 }}
+                onOpenSettings={() => setShowSettings(true)}
               />
             </div>
           )}
@@ -664,6 +665,7 @@ function Dashboard({ onAdmin }) {
                   setSelectedContact(null);
                   setTimeout(() => setViewingArchived(false), 300);
                 }}
+                onOpenSettings={() => setShowSettings(true)}
               />
             ) : (
               <div style={{

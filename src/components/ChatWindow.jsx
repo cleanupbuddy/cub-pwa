@@ -4,7 +4,7 @@ import VoiceCall from './VoiceCall';
 import { setUnreadBadge } from '../lib/badge';
 import { VERCEL_URL } from '../lib/config';
 
-function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practitionerNumber, isArchivedView, onArchived, onRead, onBack, currentUserId }) {
+function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practitionerNumber, isArchivedView, onArchived, onRead, onBack, currentUserId, onOpenSettings }) {
   const [messages, setMessages] = useState([]);
   const draftKey = `cub_draft_${contact?.phone}`;
   const [newMessage, setNewMessage] = useState(() => {
@@ -791,6 +791,7 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
           therapistName={therapistName}
           clinicName={clinicName}
           onClose={() => setShowVoiceCall(false)}
+          onOpenSettings={onOpenSettings}
         />
       )}
       {archiveError && (
