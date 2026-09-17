@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import ExportMessages from '../components/ExportMessages';
 import { registerPushNotifications } from '../lib/notifications';
 
 import { VERCEL_URL } from '../lib/config';
 import { PROFESSIONS } from '../constants/professions';
+import { formatPhoneE164, cleanPhoneDigits } from '../lib/phone';
 
 const LONG_FORM_TO_CODE = {
   'Acupuncturist': 'LAc',
@@ -21,6 +22,21 @@ function Settings({ onBack, profile, onProfileUpdate }) {
   const [therapistName, setTherapistName] = useState('');
   const [clinicName, setClinicName] = useState('');
   const [practitionerNumber, setPractitionerNumber] = useState('+1');
+  const [editingPhone, setEditingPhone] = useState(false);
+  const [newPhoneInput, setNewPhoneInput] = useState('');
+  const [phoneVerificationStep, setPhoneVerificationStep] = useState('enter'); // 'enter' | 'code'
+  const [phoneVerificationCode, setPhoneVerificationCode] = useState('');
+  const [sendingPhoneCode, setSendingPhoneCode] = useState(false);
+  const [verifyingPhoneCode, setVerifyingPhoneCode] = useState(false);
+  const [phoneError, setPhoneError] = useState('');
+  const [phoneResendCooldown, setPhoneResendCooldown] = useState(0);
+  const phoneResendIntervalRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      if (phoneResendIntervalRef.current) clearInterval(phoneResendIntervalRef.current);
+    };
+  }, []);
   const [professionType, setProfessionType] = useState('');
   const [registrationNumber, setRegistrationNumber] = useState('');
   const [autoReplyMsg, setAutoReplyMsg] = useState('');
@@ -335,6 +351,89 @@ function Settings({ onBack, profile, onProfileUpdate }) {
     lineHeight: '1.5',
   };
 
+  const sendPhoneVerificationCode = async () => {
+    const formatted = formatPhoneE164(newPhoneInput);
+    if (!formatted) {
+      setPhoneError('Please enter a valid 10-digit phone number.');
+      return;
+    }
+    setPhoneError('');
+    setSendingPhoneCode(true);
+    try {
+      const response = await fetch('https://cub-bridge-api.vercel.app/api/health-check?type=verify-send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phoneNumber: formatted })
+      });
+      const data = await response.json();
+      if (data.success) {
+        setPhoneVerificationStep('code');
+        setPhoneResendCooldown(60);
+        if (phoneResendIntervalRef.current) clearInterval(phoneResendIntervalRef.current);
+        phoneResendIntervalRef.current = setInterval(() => {
+          setPhoneResendCooldown(prev => {
+            if (prev <= 1) { clearInterval(phoneResendIntervalRef.current); return 0; }
+            return prev - 1;
+          });
+        }, 1000);
+      } else {
+        setPhoneError(data.error || 'Could not send verification code.');
+      }
+    } catch (err) {
+      console.error('Send code error:', err);
+      setPhoneError('Could not send verification code.');
+    } finally {
+      setSendingPhoneCode(false);
+    }
+  };
+
+  const verifyAndUpdatePhone = async () => {
+    if (!/^\d{6}$/.test(phoneVerificationCode)) {
+      setPhoneError('Please enter the 6-digit code.');
+      return;
+    }
+    const formatted = formatPhoneE164(newPhoneInput);
+    if (!formatted) {
+      setPhoneError('Please enter a valid 10-digit phone number.');
+      return;
+    }
+    setPhoneError('');
+    setVerifyingPhoneCode(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        setPhoneError('Session expired. Please sign in again.');
+        return;
+      }
+      const response = await fetch('https://cub-bridge-api.vercel.app/api/health-check?type=verify-check', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phoneNumber: formatted, code: phoneVerificationCode })
+      });
+      const data = await response.json();
+      if (data.success && data.verified) {
+        const { error: updateError } = await supabase.from('practitioners').update({
+          practitioner_phone: formatted
+        }).eq('user_email', session.user.email);
+        if (updateError) throw updateError;
+        setPractitionerNumber(formatted);
+        setEditingPhone(false);
+        setPhoneVerificationStep('enter');
+        setNewPhoneInput('');
+        setPhoneVerificationCode('');
+        setShowToast(true);
+        setTimeout(() => setShowToast(false), 2000);
+      } else {
+        setPhoneError(data.error || 'Incorrect code.');
+      }
+    } catch (err) {
+      console.error('Verify error:', err);
+      setPhoneError('Something went wrong. Please try again.');
+    } finally {
+      setVerifyingPhoneCode(false);
+    }
+  };
+
   return (
     <div style={{
       height: '100%',
@@ -449,13 +548,108 @@ function Settings({ onBack, profile, onProfileUpdate }) {
 
             <div>
               <label style={fieldLabelStyle}>Personal mobile</label>
-              <input
-                type="text"
-                value={practitionerNumber}
-                readOnly
-                style={lockedInputStyle}
-              />
-              <p style={fieldNoteStyle}>Contact support to update your mobile number.</p>
+              {!editingPhone ? (
+                <>
+                  <input
+                    type="text"
+                    value={practitionerNumber}
+                    readOnly
+                    style={lockedInputStyle}
+                  />
+                  <p style={fieldNoteStyle}>
+                    Used for voice bridge calls.{' '}
+                    <span
+                      onClick={() => { setEditingPhone(true); setNewPhoneInput(''); setPhoneVerificationStep('enter'); setPhoneError(''); }}
+                      style={{ color: '#588157', cursor: 'pointer', textDecoration: 'underline' }}
+                    >
+                      Update number
+                    </span>
+                  </p>
+                </>
+              ) : (
+                <>
+                  {phoneVerificationStep === 'enter' && (
+                    <>
+                      <input
+                        type="tel"
+                        value={newPhoneInput}
+                        onChange={e => {
+                          let digits = cleanPhoneDigits(e.target.value);
+                          if (digits.startsWith('1') && digits.length === 11) digits = digits.slice(1);
+                          setNewPhoneInput(digits ? `+1 ${digits}` : '+1 ');
+                        }}
+                        onFocus={() => { if (!newPhoneInput) setNewPhoneInput('+1 '); }}
+                        placeholder="+1 778 555 0123"
+                        style={inputStyle}
+                      />
+                      {phoneError && <p style={{ color: '#E57373', fontSize: '11px', marginTop: '6px' }}>{phoneError}</p>}
+                      <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                        <button
+                          onClick={sendPhoneVerificationCode}
+                          disabled={sendingPhoneCode}
+                          style={{
+                            flex: 1, padding: '10px', background: '#588157', border: 'none',
+                            borderRadius: '10px', fontSize: '11px', fontWeight: '600', color: 'white',
+                            cursor: sendingPhoneCode ? 'not-allowed' : 'pointer', fontFamily: "'Outfit', sans-serif"
+                          }}
+                        >
+                          {sendingPhoneCode ? 'Sending...' : 'Send code'}
+                        </button>
+                        <button
+                          onClick={() => setEditingPhone(false)}
+                          style={{
+                            padding: '10px 16px', background: '#fff', border: '0.5px solid #E2E8E1',
+                            borderRadius: '10px', fontSize: '11px', color: '#2F3E46', cursor: 'pointer', fontFamily: "'Outfit', sans-serif"
+                          }}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </>
+                  )}
+                  {phoneVerificationStep === 'code' && (
+                    <>
+                      <p style={{ fontSize: '11px', color: '#94A3B8', marginBottom: '8px' }}>
+                        Code sent to {newPhoneInput}
+                      </p>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={6}
+                        value={phoneVerificationCode}
+                        onChange={e => setPhoneVerificationCode(e.target.value.replace(/\D/g, ''))}
+                        placeholder="123456"
+                        style={inputStyle}
+                      />
+                      {phoneError && <p style={{ color: '#E57373', fontSize: '11px', marginTop: '6px' }}>{phoneError}</p>}
+                      <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                        <button
+                          onClick={verifyAndUpdatePhone}
+                          disabled={verifyingPhoneCode}
+                          style={{
+                            flex: 1, padding: '10px', background: '#588157', border: 'none',
+                            borderRadius: '10px', fontSize: '11px', fontWeight: '600', color: 'white',
+                            cursor: verifyingPhoneCode ? 'not-allowed' : 'pointer', fontFamily: "'Outfit', sans-serif"
+                          }}
+                        >
+                          {verifyingPhoneCode ? 'Verifying...' : 'Verify'}
+                        </button>
+                        <button
+                          onClick={sendPhoneVerificationCode}
+                          disabled={phoneResendCooldown > 0}
+                          style={{
+                            padding: '10px 12px', background: 'none', border: 'none',
+                            fontSize: '11px', color: phoneResendCooldown > 0 ? '#C5CAD2' : '#588157',
+                            cursor: phoneResendCooldown > 0 ? 'not-allowed' : 'pointer', fontFamily: "'Outfit', sans-serif"
+                          }}
+                        >
+                          {phoneResendCooldown > 0 ? `${phoneResendCooldown}s` : 'Resend'}
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </>
+              )}
             </div>
 
             <div>
