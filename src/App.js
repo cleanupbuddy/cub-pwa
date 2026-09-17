@@ -18,7 +18,9 @@ function App() {
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
   const [startupError, setStartupError] = useState('');
   const [hasResolvedAccess, setHasResolvedAccess] = useState(false);
+  const [confirmingSubscription, setConfirmingSubscription] = useState(false);
   const isResolvingRef = useRef(false);
+  const isSubscribedRef = useRef(false);
 
   const checkSubscription = async (email) => {
     try {
@@ -60,6 +62,7 @@ function App() {
         setSession(null);
         setUserEmail('');
         setIsSubscribed(false);
+        isSubscribedRef.current = false;
         setNeedsOnboarding(false);
         setLoading(false);
         setHasResolvedAccess(true);
@@ -73,6 +76,7 @@ function App() {
       setUserEmail(email);
       if (result) {
         setIsSubscribed(result.subscribed);
+        isSubscribedRef.current = result.subscribed;
         setNeedsOnboarding(result.onboarding);
       }
       setLoading(false);
@@ -127,6 +131,28 @@ function App() {
         }
       }
     };
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const subscribedParam = urlParams.get('subscribed');
+    const cancelledParam = urlParams.get('cancelled');
+
+    if (subscribedParam === 'true') {
+      setConfirmingSubscription(true);
+      window.history.replaceState({}, '', window.location.pathname);
+
+      let attempts = 0;
+      const maxAttempts = 6;
+      const pollInterval = setInterval(async () => {
+        attempts++;
+        await resolveAppAccess();
+        if (isSubscribedRef.current || attempts >= maxAttempts) {
+          clearInterval(pollInterval);
+          setConfirmingSubscription(false);
+        }
+      }, 1000);
+    } else if (cancelledParam === 'true') {
+      window.history.replaceState({}, '', window.location.pathname);
+    }
 
     bootstrap();
 
@@ -190,6 +216,26 @@ function App() {
       window.removeEventListener('pageshow', handlePageShow);
     };
   }, []);
+
+  if (confirmingSubscription) return (
+    <div style={{
+      position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+      background: '#2F3E46', zIndex: 500,
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      fontFamily: "'Outfit', sans-serif", padding: '32px'
+    }}>
+      <svg width="56" height="56" viewBox="0 0 120 120" style={{ marginBottom: '24px' }}>
+        <rect x="0" y="0" width="120" height="120" rx="22" fill="#EAF3DE" />
+        <text x="60" y="95" fontFamily="Georgia, serif" fontSize="36" fontWeight="700" fill="#526659" textAnchor="middle" letterSpacing="-0.5">cub</text>
+      </svg>
+      <h2 style={{ color: '#EAF3DE', fontSize: '20px', fontWeight: '600', marginBottom: '8px' }}>
+        You're in!
+      </h2>
+      <p style={{ color: '#9CAF88', fontSize: '13px', textAlign: 'center' }}>
+        Confirming your subscription...
+      </p>
+    </div>
+  );
 
   if (isBootstrapping) return (
     <>
