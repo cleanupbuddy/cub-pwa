@@ -224,7 +224,7 @@ function Onboarding({ onComplete, userEmail }) {
           .eq('user_email', session.user.email);
         setStep(4);
       } else {
-        setError('Could not claim that number. Please try another.');
+        setError(data.error || 'Could not claim that number. Please try another.');
       }
     } catch (err) {
       setError('Something went wrong. Please try again.');
