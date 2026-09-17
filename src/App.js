@@ -14,7 +14,6 @@ function App() {
   const [isBootstrapping, setIsBootstrapping] = useState(true);
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [userEmail, setUserEmail] = useState('');
-  const [paywallSkipped, setPaywallSkipped] = useState(false);
   const [showAdmin, setShowAdmin] = useState(false);
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
   const [startupError, setStartupError] = useState('');
@@ -276,10 +275,9 @@ function App() {
           !session ? <Navigate to="/login" /> :
             <BCGate userEmail={session.user.email}>
               {!hasResolvedAccess ? null :
-                !isSubscribed && !paywallSkipped ?
+                !isSubscribed ?
                   <Paywall
                     userEmail={userEmail}
-                    onSkip={() => setPaywallSkipped(true)}
                     onReturnToLogin={() => {
                       window.location.href = '/login';
                     }}

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 
 import { VERCEL_URL } from '../lib/config';
 
-function Paywall({ userEmail, onSkip, onReturnToLogin }) {
+function Paywall({ userEmail, onReturnToLogin }) {
   const [loading, setLoading] = useState(null);
 
   const handleSubscribe = async (plan) => {
@@ -120,25 +120,6 @@ function Paywall({ userEmail, onSkip, onReturnToLogin }) {
 
         {/* Secondary actions */}
         <div style={{ marginTop: '16px', textAlign: 'center' }}>
-
-          {onSkip && (
-            <button
-              onClick={onSkip}
-              style={{
-                width: '100%',
-                background: 'none',
-                border: 'none',
-                color: '#C5CAD2',
-                fontSize: '11px',
-                cursor: 'pointer',
-                fontFamily: "'Outfit', sans-serif",
-                textAlign: 'center',
-                marginBottom: onReturnToLogin ? '8px' : '0'
-              }}
-            >
-              Skip for now — take a look around first
-            </button>
-          )}
 
           {onReturnToLogin && (
             <button
