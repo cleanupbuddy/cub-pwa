@@ -228,7 +228,7 @@ function Dashboard({ onAdmin }) {
       if (!session) return;
       await supabase.from('practitioners')
         .update({ broadcast_tip_shown: true })
-        .eq('id', session.user.id);
+        .eq('user_email', session.user.email);
       loadProfile();
     } catch (err) {
       console.error('Broadcast tip dismiss error:', err);
@@ -273,7 +273,7 @@ function Dashboard({ onAdmin }) {
       if (session) {
         await supabase.from('practitioners')
           .update({ current_status: newStatus })
-          .eq('id', session.user.id);
+          .eq('user_email', session.user.email);
       }
     } catch (err) {
       console.error('Status update error:', err);

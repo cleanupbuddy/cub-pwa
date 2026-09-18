@@ -39,7 +39,7 @@ export async function registerPushNotifications() {
     const { data: profile } = await supabase
       .from('practitioners')
       .select('push_subscription')
-      .eq('id', session.user.id)
+      .eq('user_email', session.user.email)
       .maybeSingle();
 
     const storedEndpoint = profile?.push_subscription?.endpoint;
@@ -52,7 +52,7 @@ export async function registerPushNotifications() {
     const { error } = await supabase
       .from('practitioners')
       .update({ push_subscription: subscription.toJSON() })
-      .eq('id', session.user.id);
+      .eq('user_email', session.user.email);
 
     if (error) {
       console.error('Push subscription save error:', error);

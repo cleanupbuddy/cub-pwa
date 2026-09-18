@@ -254,7 +254,7 @@ function Settings({ onBack, profile, onProfileUpdate }) {
 
       await supabase.from('practitioners')
         .delete()
-        .eq('id', session.user.id);
+        .eq('user_email', session.user.email);
 
       await supabase.auth.signOut();
       localStorage.clear();
@@ -867,7 +867,7 @@ function Settings({ onBack, profile, onProfileUpdate }) {
                     if (result.ok) {
                       await supabase.from('practitioners')
                         .update({ notifications_enabled: true })
-                        .eq('id', session.user.id);
+                        .eq('user_email', session.user.email);
                       if (onProfileUpdate) onProfileUpdate();
                       setNotifMessage('Notifications enabled on this device.');
                     } else if (result.reason === 'denied') {
@@ -882,7 +882,7 @@ function Settings({ onBack, profile, onProfileUpdate }) {
                     if (!session) return;
                     await supabase.from('practitioners')
                       .update({ notifications_enabled: false })
-                      .eq('id', session.user.id);
+                      .eq('user_email', session.user.email);
                     if (onProfileUpdate) onProfileUpdate();
                     setNotifMessage('Notifications disabled.');
                   }

@@ -11,7 +11,7 @@ function NotificationPrompt({ onComplete }) {
     if (!session) return;
     await supabase.from('practitioners')
       .update(fields)
-      .eq('id', session.user.id);
+      .eq('user_email', session.user.email);
   };
 
   const handleEnable = async () => {
