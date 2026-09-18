@@ -185,6 +185,7 @@ function Dashboard({ onAdmin }) {
   useEffect(() => {
     if (!currentUserId || hasAutoSelectedRef.current) return;
     hasAutoSelectedRef.current = true;
+    if (isMobile) return;
     try {
       const saved = localStorage.getItem('cub_last_contact');
       if (saved) {
