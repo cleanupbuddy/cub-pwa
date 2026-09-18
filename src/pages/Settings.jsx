@@ -570,18 +570,27 @@ function Settings({ onBack, profile, onProfileUpdate }) {
                 <>
                   {phoneVerificationStep === 'enter' && (
                     <>
-                      <input
-                        type="tel"
-                        value={newPhoneInput}
-                        onChange={e => {
-                          let digits = cleanPhoneDigits(e.target.value);
-                          if (digits.startsWith('1') && digits.length === 11) digits = digits.slice(1);
-                          setNewPhoneInput(digits ? `+1 ${digits}` : '+1 ');
-                        }}
-                        onFocus={() => { if (!newPhoneInput) setNewPhoneInput('+1 '); }}
-                        placeholder="+1 778 555 0123"
-                        style={inputStyle}
-                      />
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={{
+                          fontSize: '16px', color: '#2F3E46', fontFamily: "'Outfit', sans-serif",
+                          padding: '10px 0 10px 12px', flexShrink: 0
+                        }}>
+                          +1
+                        </span>
+                        <input
+                          type="tel"
+                          inputMode="numeric"
+                          value={newPhoneInput.replace(/^\+1\s*/, '')}
+                          onChange={e => {
+                            let digits = cleanPhoneDigits(e.target.value);
+                            if (digits.length === 11 && digits.startsWith('1')) digits = digits.slice(1);
+                            digits = digits.slice(0, 10);
+                            setNewPhoneInput(digits);
+                          }}
+                          placeholder="778 555 0123"
+                          style={{ ...inputStyle, flex: 1 }}
+                        />
+                      </div>
                       {phoneError && <p style={{ color: '#E57373', fontSize: '11px', marginTop: '6px' }}>{phoneError}</p>}
                       <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
                         <button
@@ -610,7 +619,7 @@ function Settings({ onBack, profile, onProfileUpdate }) {
                   {phoneVerificationStep === 'code' && (
                     <>
                       <p style={{ fontSize: '11px', color: '#94A3B8', marginBottom: '8px' }}>
-                        Code sent to {newPhoneInput}
+                        Code sent to +1 {newPhoneInput}
                       </p>
                       <input
                         type="text"

@@ -9,7 +9,7 @@ function Onboarding({ onComplete, userEmail }) {
   const [therapistName, setTherapistName] = useState('');
   const [clinicName, setClinicName] = useState('');
   const [professionType, setProfessionType] = useState('');
-  const [practitionerPhone, setPractitionerPhone] = useState('+1');
+  const [practitionerPhone, setPractitionerPhone] = useState('');
   const [areaCode, setAreaCode] = useState('778');
   const [availableNumbers, setAvailableNumbers] = useState([]);
   const [selectedNumber, setSelectedNumber] = useState('');
@@ -374,18 +374,27 @@ function Onboarding({ onComplete, userEmail }) {
                 </p>
 
                 <label style={labelStyle}>Personal mobile number</label>
-                <input
-                  type="tel"
-                  value={practitionerPhone}
-                  onChange={e => {
-                    let digits = cleanPhoneDigits(e.target.value);
-                    if (digits.startsWith('1') && digits.length === 11) digits = digits.slice(1);
-                    setPractitionerPhone(digits ? `+1 ${digits}` : '+1 ');
-                  }}
-                  onFocus={() => { if (!practitionerPhone) setPractitionerPhone('+1 '); }}
-                  placeholder="+1 778 555 0123"
-                  style={inputStyle}
-                />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{
+                    fontSize: '16px', color: '#2F3E46', fontFamily: "'Outfit', sans-serif",
+                    padding: '10px 0 10px 12px', flexShrink: 0
+                  }}>
+                    +1
+                  </span>
+                  <input
+                    type="tel"
+                    inputMode="numeric"
+                    value={practitionerPhone.replace(/^\+1\s*/, '')}
+                    onChange={e => {
+                      let digits = cleanPhoneDigits(e.target.value);
+                      if (digits.length === 11 && digits.startsWith('1')) digits = digits.slice(1);
+                      digits = digits.slice(0, 10);
+                      setPractitionerPhone(digits);
+                    }}
+                    placeholder="778 555 0123"
+                    style={{ ...inputStyle, flex: 1 }}
+                  />
+                </div>
 
                 <div style={{
                   background: '#F0F4EE', borderRadius: '10px', padding: '12px 14px',
@@ -426,7 +435,7 @@ function Onboarding({ onComplete, userEmail }) {
             {verificationStep === 'code' && (
               <>
                 <p style={{ fontSize: '13px', color: '#94A3B8', marginBottom: '24px', lineHeight: '1.6' }}>
-                  We sent a 6-digit code to <strong style={{ color: '#2F3E46' }}>{practitionerPhone}</strong>. Enter it below to verify your number.
+                  We sent a 6-digit code to <strong style={{ color: '#2F3E46' }}>+1 {practitionerPhone}</strong>. Enter it below to verify your number.
                 </p>
 
                 <label style={labelStyle}>Verification code</label>
