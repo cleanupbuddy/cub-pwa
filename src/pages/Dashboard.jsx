@@ -29,6 +29,7 @@ function Dashboard({ onAdmin }) {
   const [showTour, setShowTour] = useState(false);
   const [showReportIssue, setShowReportIssue] = useState(false);
   const [showInstallBanner, setShowInstallBanner] = useState(false);
+  const [canInstallNatively, setCanInstallNatively] = useState(false);
   const [showShareFeedback, setShowShareFeedback] = useState(false);
   const [currentUserId, setCurrentUserId] = useState(null);
   const [showNotificationPrompt, setShowNotificationPrompt] = useState(false);
@@ -37,6 +38,7 @@ function Dashboard({ onAdmin }) {
   const [broadcastResetKey, setBroadcastResetKey] = useState(0);
 
   const hasAutoSelectedRef = useRef(false);
+  const deferredPromptRef = useRef(null);
 
   useEffect(() => {
     loadProfile();
@@ -49,6 +51,29 @@ function Dashboard({ onAdmin }) {
 
     if (!isStandalone && isMobileDevice && !bannerDismissed) setShowInstallBanner(true);
   }, []);
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e) => {
+      e.preventDefault();
+      deferredPromptRef.current = e;
+      setCanInstallNatively(true);
+    };
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
+
+  const triggerNativeInstall = async () => {
+    if (!deferredPromptRef.current) return;
+    deferredPromptRef.current.prompt();
+    const { outcome } = await deferredPromptRef.current.userChoice;
+    if (outcome === 'accepted') {
+      setShowInstallBanner(false);
+      setCanInstallNatively(false);
+    }
+    deferredPromptRef.current = null;
+  };
 
   const handleSwitchAccount = async () => {
     try {
@@ -279,24 +304,41 @@ function Dashboard({ onAdmin }) {
           lineHeight: '1.5', flexShrink: 0
         }}>
           <span>
-            {isAndroid
-              ? <>🌿 For the best experience — <strong>Add CUB to your Home Screen</strong> via Chrome menu (⋮) → Add to Home Screen</>
-              : <>🌿 For the best experience — <strong>Add CUB to your Home Screen</strong> via Safari Share → Add to Home Screen</>
+            {canInstallNatively
+              ? <>🌿 <strong>Install CUB</strong> for the best experience</>
+              : isAndroid
+                ? <>🌿 For the best experience — <strong>Add CUB to your Home Screen</strong> via Chrome menu (⋮) → Add to Home Screen</>
+                : <>🌿 For the best experience — <strong>Add CUB to your Home Screen</strong> via Safari Share → Add to Home Screen</>
             }
           </span>
-          <button
-            onClick={() => {
-              localStorage.setItem('cub_install_banner_dismissed', 'true');
-              setShowInstallBanner(false);
-            }}
-            style={{
-              background: 'none', border: 'none', color: '#9CAF88',
-              fontSize: '16px', cursor: 'pointer', flexShrink: 0,
-              lineHeight: 1, padding: 0
-            }}
-          >
-            ✕
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
+            {canInstallNatively && (
+              <button
+                onClick={triggerNativeInstall}
+                style={{
+                  background: '#588157', border: 'none', color: 'white',
+                  fontSize: '11px', fontWeight: '600', cursor: 'pointer',
+                  padding: '6px 12px', borderRadius: '8px',
+                  fontFamily: "'Outfit', sans-serif"
+                }}
+              >
+                Install
+              </button>
+            )}
+            <button
+              onClick={() => {
+                localStorage.setItem('cub_install_banner_dismissed', 'true');
+                setShowInstallBanner(false);
+              }}
+              style={{
+                background: 'none', border: 'none', color: '#9CAF88',
+                fontSize: '16px', cursor: 'pointer', flexShrink: 0,
+                lineHeight: 1, padding: 0
+              }}
+            >
+              ✕
+            </button>
+          </div>
         </div>
       )}
 
