@@ -670,7 +670,7 @@ function Settings({ onBack, profile, onProfileUpdate }) {
                 readOnly
                 style={lockedInputStyle}
               />
-              <p style={fieldNoteStyle}>Your clinic number is permanent. Contact support if you need assistance.</p>
+              <p style={fieldNoteStyle}>Once claimed, this number is locked to your account. Contact support if you need assistance.</p>
               {!profile?.clinic_number && (
                 <div style={{ marginTop: '12px' }}>
                   <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
