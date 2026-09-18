@@ -113,6 +113,20 @@ function WelcomeSurvey({ onComplete }) {
 
       {/* Question */}
       <div style={{ width: '100%', maxWidth: '400px' }}>
+        {step > 0 && (
+          <button
+            onClick={() => setStep(step - 1)}
+            style={{
+              background: 'none', border: 'none', color: '#588157',
+              fontSize: '11px', fontWeight: '600', cursor: 'pointer',
+              fontFamily: "'Outfit', sans-serif", textTransform: 'uppercase',
+              letterSpacing: '0.08em', marginBottom: '16px', padding: 0,
+              display: 'block'
+            }}
+          >
+            ‹ Back
+          </button>
+        )}
         <h2 style={{
           fontSize: '18px', fontWeight: '600', color: '#2F3E46',
           marginBottom: '20px', lineHeight: '1.4', textAlign: 'center'
