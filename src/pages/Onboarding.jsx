@@ -376,8 +376,9 @@ function Onboarding({ onComplete, userEmail }) {
                 <label style={labelStyle}>Personal mobile number</label>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <span style={{
-                    fontSize: '16px', color: '#2F3E46', fontFamily: "'Outfit', sans-serif",
-                    padding: '10px 0 10px 12px', flexShrink: 0
+                    fontSize: '14px', color: '#2F3E46', fontFamily: "'Outfit', sans-serif",
+                    padding: '12px 0 12px 14px', flexShrink: 0,
+                    border: '0.5px solid transparent', boxSizing: 'border-box'
                   }}>
                     +1
                   </span>

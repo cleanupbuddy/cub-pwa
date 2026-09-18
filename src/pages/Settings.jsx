@@ -573,7 +573,8 @@ function Settings({ onBack, profile, onProfileUpdate }) {
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                         <span style={{
                           fontSize: '16px', color: '#2F3E46', fontFamily: "'Outfit', sans-serif",
-                          padding: '10px 0 10px 12px', flexShrink: 0
+                          padding: '10px 0 10px 12px', flexShrink: 0,
+                          border: '1px solid transparent', boxSizing: 'border-box'
                         }}>
                           +1
                         </span>
