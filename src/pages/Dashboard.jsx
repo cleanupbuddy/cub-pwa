@@ -209,13 +209,16 @@ function Dashboard({ onAdmin }) {
     }
   };
 
-  const handleSignOut = () => {
-    localStorage.removeItem('cub_last_contact');
-    localStorage.removeItem('cub_profile_cache');
-    Object.keys(localStorage).forEach(key => {
-      if (key.startsWith('sb-')) localStorage.removeItem(key);
-    });
-    window.location.reload();
+  const handleSignOut = async () => {
+    try {
+      await supabase.auth.signOut({ scope: 'global' });
+    } catch (err) {
+      console.error('Sign out error:', err);
+    } finally {
+      localStorage.removeItem('cub_last_contact');
+      localStorage.removeItem('cub_profile_cache');
+      window.location.replace('/login');
+    }
   };
 
   const handleBroadcast = (phones, message) => {
