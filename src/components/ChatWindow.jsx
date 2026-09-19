@@ -360,9 +360,7 @@ function ChatWindow({ contact, clinicNumber, therapistName, clinicName, practiti
       setTimeout(() => {
         setArchived(false);
         if (onArchived) onArchived();
-        if (!archive) {
-          if (onBack) onBack();
-        }
+        if (onBack) onBack();
       }, 2000);
     } catch (err) {
       console.error('Archive error:', err);
