@@ -510,7 +510,7 @@ function Dashboard({ onAdmin }) {
               <div style={{ height: '0.5px', background: '#E2E8E1', margin: '4px 0' }} />
 
               <div
-                onClick={(e) => { e.stopPropagation(); setShowStatusMenu(false); window.open('https://getcubsuite.com/#faq', '_blank'); }}
+                onClick={(e) => { e.stopPropagation(); setShowStatusMenu(false); window.open('https://getcubsuite.com/line#faq', '_blank'); }}
                 style={{
                   padding: '9px 12px', fontSize: '12px', color: '#2F3E46',
                   borderRadius: '8px', cursor: 'pointer'
